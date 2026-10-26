@@ -944,8 +944,7 @@ function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
  highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(true);window.dispatchEvent(new CustomEvent('earth:satellite-selected',{detail:{id:record.id,name:record.name,satrec:record.satrec,epoch:record.epoch}}));detail.hidden=false;updateDetails();
- if(panel.hidden)panel.hidden=false;
- if(window.matchMedia('(max-width:700px)').matches)detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+ // Satellite details are presented in an independent orbit-following card.
 }
 $('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false)});
 $('sat62-list').addEventListener('click',event=>{const item=event.target.closest('[data-norad]');if(item)selectSatellite(item.dataset.norad)});
@@ -1046,6 +1045,21 @@ function paint(t){
   }
  }
  const view=window.earthOrbitalView();
+ if(selectedRecord&&!detail.hidden){
+  const pv=window.earthSGP4?.propagate(selectedRecord.satrec,new Date());
+  const point=pv?.position&&typeof pv.position!=='boolean'?project(pv.position,view):null;
+  const cardW=detail.offsetWidth||300,cardH=detail.offsetHeight||260;
+  if(point&&point.x>=0&&point.y>=0&&point.x<=rect.width&&point.y<=rect.height){
+   detail.style.visibility='visible';
+   const gap=30,margin=10;
+   const x=point.x+gap+cardW<rect.width-margin?point.x+gap:point.x-gap-cardW;
+   const y=Math.max(margin,Math.min(rect.height-cardH-margin,point.y-cardH/2));
+   detail.style.left=Math.max(margin,Math.min(rect.width-cardW-margin,x))+'px';
+   detail.style.top=y+'px';
+  }else{
+   detail.style.visibility='hidden';
+  }
+ }
  if(selectedRecord&&predictionMinutes){
   if(predictionFor!==selectedRecord.id||t-predictionAt>30000){predictionCache=buildPrediction();predictionFor=selectedRecord.id;predictionAt=t}
   context.save();context.beginPath();context.setLineDash([6,5]);context.lineWidth=2.2;context.strokeStyle='rgba(91,255,213,.95)';
@@ -1498,5 +1512,38 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  if(!card)return;
  // An ancestor with isolation/transform can trap z-index; portal into body avoids that.
  if(card.parentElement!==document.body)document.body.appendChild(card);
+})();
+</script>
+
+<!-- EARTH 7.0.7: satellite orbit-following info card and aligned bottom-left controls -->
+<style id="earth70-satellite-follow-card">
+@media(min-width:850px){
+ #app .info{bottom:calc(14px + env(safe-area-inset-bottom,0px))!important}
+ #sat61-toggle,#advanced-open{
+  top:auto!important;bottom:calc(166px + env(safe-area-inset-bottom,0px))!important;
+ }
+ #sat61-toggle{left:24px!important}
+ #advanced-open{left:195px!important}
+}
+#sat64-details:not([hidden]){
+ position:absolute!important;
+ z-index:45!important;
+ margin:0!important;
+ width:min(330px,calc(100vw - 24px))!important;
+ max-height:min(60dvh,480px)!important;
+ overflow:auto!important;
+ box-shadow:0 12px 35px rgba(0,0,0,.65)!important;
+ pointer-events:auto!important;
+}
+#sat64-details[hidden]{display:none!important}
+@media(max-width:849px){
+ #sat64-details:not([hidden]){width:min(280px,calc(100vw - 20px))!important;max-height:48dvh!important}
+}
+</style>
+<script id="earth70-satellite-card-portal">
+(()=>{
+ const card=document.getElementById('sat64-details');
+ const app=document.getElementById('app');
+ if(card&&app&&card.parentElement!==app)app.appendChild(card);
 })();
 </script>

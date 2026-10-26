@@ -23,11 +23,13 @@ test('existing orbital capabilities are preserved', () => {
  }
 });
 
-test('country info controls use measured docking rather than a guessed offset', () => {
- assert.match(html, /id="earth70-measured-dock"/);
- assert.match(html, /getBoundingClientRect\(\)/);
- assert.match(html, /--earth70-info-top-gap/);
+test('country info controls use the consolidated responsive dock', () => {
+ assert.match(html, /id="earth71-layout"/);
+ assert.match(html, /id="earth71-layout-sync"/);
+ assert.match(html, /--earth71-dock-bottom/);
  assert.match(html, /ResizeObserver/);
+ assert.doesNotMatch(html, /id="earth70-bottom-left-dock"/);
+ assert.doesNotMatch(html, /id="earth70-measured-dock-script"/);
 });
 test('satellite selection does not implicitly enable follow', () => {
  const selection = html.match(/function selectSatellite\(id\)\{[\s\S]*?\n\}/)?.[0];

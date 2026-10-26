@@ -102,6 +102,17 @@ pix[a]=Math.min(255,src[b]*shade+lift);pix[a+1]=Math.min(255,src[b+1]*shade+lift
 function rings(f){let g=f.geometry;return g.type==='Polygon'?g.coordinates:g.coordinates.flat()}
 function proj(lo,la,cx,cy,r){let a=(lo-lon)*Math.PI/180,b=la*Math.PI/180,p=lat*Math.PI/180;return{x:cx+r*Math.cos(b)*Math.sin(a),y:cy-r*(Math.sin(b)*Math.cos(p)-Math.cos(b)*Math.cos(a)*Math.sin(p)),v:Math.cos(b)*Math.cos(a)*Math.cos(p)+Math.sin(b)*Math.sin(p)}}
 window.earthOrbitalView=()=>({lon,lat,zoom,spin,sphere:sphere(app.clientWidth,app.clientHeight),width:app.clientWidth,height:app.clientHeight});
+window.earthSatelliteCamera={
+ follow(targetLon,targetLat){
+  if(!Number.isFinite(targetLon)||!Number.isFinite(targetLat)||drag||activeTouches.size>0)return false;
+  focusTween=null;angularVelocityX=angularVelocityY=0;
+  spin=false;document.getElementById('spin').textContent='▶ 自轉';
+  const delta=((targetLon-lon+540)%360)-180;
+  lon=(lon+Math.max(-2.6,Math.min(2.6,delta*.14))+360)%360;
+  lat=Math.max(-75,Math.min(75,lat+Math.max(-1.8,Math.min(1.8,(targetLat-lat)*.14))));
+  return true;
+ }
+};
 function sphere(w,h){let r=Math.min(w*.42,h*.35)*zoom,x=w/2,y=h*.53;return{x,y,r}}
 // 5.9: adaptive frame pacing. Preserve all controls and visual layers.
 let lastPaintAt=0;
@@ -856,7 +867,20 @@ const message=document.createElement('div');message.id='sat63-alert';message.tex
 let engine=null,records=[],cache=[],lastSample=0,active=false,loading=false;
 let visibleSatellites=[];let highlightedId=null;
 const detail=$('sat64-details'),detailName=$('sat64-name'),detailData=$('sat64-data');
-let selectedRecord=null,lastDetailUpdate=0;
+let selectedRecord=null,lastDetailUpdate=0,autoFollow=false,lastFollowAt=0;
+const followButton=document.createElement('button');
+followButton.id='sat67-follow';followButton.type='button';followButton.textContent='◎ 開始自動追蹤';
+followButton.setAttribute('aria-pressed','false');
+followButton.style.cssText='width:100%;min-height:44px;margin:8px 0;border:1px solid #48b7e0;border-radius:9px;background:#063955;color:#e4fbff;font-weight:700;touch-action:manipulation';
+detail.querySelector('.sat64-title').after(followButton);
+const followStatus=document.createElement('small');followStatus.id='sat67-follow-status';followStatus.style.cssText='display:block;margin:4px 0 8px;color:#9bd7ed;line-height:1.5';followButton.after(followStatus);
+function setFollow(on){
+ autoFollow=Boolean(on&&selectedRecord);
+ followButton.setAttribute('aria-pressed',String(autoFollow));
+ followButton.textContent=autoFollow?'■ 停止自動追蹤':'◎ 開始自動追蹤';
+ followStatus.textContent=autoFollow?'追蹤中：地球視角會持續轉向所選衛星；手動拖曳時暫停跟隨。':'點選開始追蹤，讓地球持續轉向衛星目前位置。';
+}
+followButton.addEventListener('click',()=>setFollow(!autoFollow));
 function detailRow(label,value){
  const line=document.createElement('div');line.className='sat64-row';
  const a=document.createElement('span');a.textContent=label;
@@ -896,10 +920,10 @@ listObserver.observe($('sat62-list'),{childList:true});
 function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
- highlightedId=record.id;selectedRecord=record;detail.hidden=false;updateDetails();
+ highlightedId=record.id;selectedRecord=record;setFollow(false);detail.hidden=false;updateDetails();
  if(panel.hidden)panel.hidden=false;
 }
-$('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null});
+$('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false)});
 $('sat62-list').addEventListener('click',event=>{const item=event.target.closest('[data-norad]');if(item)selectSatellite(item.dataset.norad)});
 $('sat62-list').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-norad]')){event.preventDefault();selectSatellite(event.target.dataset.norad)}});
 
@@ -988,6 +1012,15 @@ function paint(t){
  if(!active||!records.length||!window.earthOrbitalView)return;
  if(t-lastSample>2500){cache=sample();lastSample=t}
  if(selectedRecord&&t-lastDetailUpdate>2500){updateDetails();lastDetailUpdate=t}
+ if(autoFollow&&selectedRecord&&t-lastFollowAt>80){
+  lastFollowAt=t;
+  const pv=window.earthSGP4?.propagate(selectedRecord.satrec,new Date());
+  if(pv?.position&&typeof pv.position!=='boolean'){
+   const sat=window.earthSGP4,geo=sat.eciToGeodetic(pv.position,sat.gstime(new Date()));
+   const targetLon=((geo.longitude*180/Math.PI+540)%360)-180;
+   window.earthSatelliteCamera?.follow(targetLon,geo.latitude*180/Math.PI);
+  }
+ }
  const view=window.earthOrbitalView();
  visibleSatellites=[];
  const labels=[];
@@ -1106,6 +1139,16 @@ $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新�
 #sat65-source-choices button{min-width:0;padding:9px 4px;font-size:12px;border-radius:8px;border:1px solid #378db5;background:#092a43;color:#d3f6ff}
 #sat65-source-choices button[aria-pressed="true"]{background:#096c98;border-color:#79eaff}
 #sat65-open-official{display:block;text-align:center;padding:12px;border:1px solid #378db5;border-radius:8px;margin-top:9px;text-decoration:none}
+</style><style id="sat67-mobile">
+@media(max-width:700px){
+ #sat61-panel{max-width:min(94vw,420px)!important;max-height:82dvh!important;overflow-y:auto!important;overscroll-behavior:contain}
+ #sat64-details{scroll-margin-top:16px}
+ #sat64-details button,#sat61-panel button{min-height:42px;touch-action:manipulation}
+ #sat62-list{max-height:25dvh;overflow-y:auto;overscroll-behavior:contain}
+ #sat65-source-choices button{min-height:44px}
+ #sat64-data{overflow-wrap:anywhere}
+}
+@media(prefers-reduced-motion:reduce){#sat67-follow{transition:none!important}}
 </style><style id="sat65-style">
 #sat65-live{margin:12px 0;padding:12px;border:1px solid #54d8f7;border-radius:13px;background:linear-gradient(140deg,#062844,#08162e);box-shadow:0 0 18px #1cbdf526}
 #sat65-live[hidden],#sat65-iss-detail-button[hidden]{display:none!important}

@@ -919,9 +919,17 @@ function updateDetails(){
  const inclination=selectedRecord.satrec?.inclo,meanMotion=selectedRecord.satrec?.no;
  detailRow('軌道傾角',Number.isFinite(inclination)?(inclination*180/Math.PI).toFixed(2)+'°':'資料不足');
  detailRow('軌道週期',Number.isFinite(meanMotion)&&meanMotion>0?(2*Math.PI/meanMotion).toFixed(1)+' 分鐘':'資料不足');
+ const eccentricity=selectedRecord.satrec?.ecco;
+ const revolutionsPerMinute=Number.isFinite(meanMotion)&&meanMotion>0?meanMotion:NaN;
+ const semiMajor=Number.isFinite(revolutionsPerMinute)?Math.cbrt(398600.4418/Math.pow(revolutionsPerMinute/60,2)):NaN;
+ const validElements=Number.isFinite(semiMajor)&&Number.isFinite(eccentricity)&&eccentricity>=0&&eccentricity<1;
+ detailRow('近地點高度（模型估計）',validElements?(semiMajor*(1-eccentricity)-6378.137).toFixed(1)+' km':'資料不足');
+ detailRow('遠地點高度（模型估計）',validElements?(semiMajor*(1+eccentricity)-6378.137).toFixed(1)+' km':'資料不足');
  detailRow('所屬國家／機構','資料不足（軌道資料不含可靠歸屬）');
  detailRow('衛星用途','資料不足（需另行核對衛星目錄）');
  detailRow('軌道資料時間',Number.isFinite(epoch.getTime())?epoch.toLocaleString('zh-TW',{hour12:false}):selectedRecord.epoch||'未知');
+ const ageDays=Number.isFinite(epoch.getTime())?Math.abs(now.getTime()-epoch.getTime())/86400000:NaN;
+ detailRow('資料新鮮度',Number.isFinite(ageDays)?ageDays.toFixed(1)+' 天前'+(ageDays>7?' ⚠ 軌道參數偏舊，預測誤差可能增加':''):'無法確認');
  detailRow('推算時間',now.toLocaleString('zh-TW',{hour12:false}));
 }
 const listObserver=new MutationObserver(()=>{
@@ -1044,6 +1052,10 @@ function paint(t){
   let begun=false;
   for(const step of predictionCache){const p=step&&project(step.position,view,step.time);if(!p){begun=false;continue}if(!begun){context.moveTo(p.x,p.y);begun=true}else context.lineTo(p.x,p.y)}
   context.stroke();context.restore();
+  // Mark the predicted endpoint to distinguish the future track from current position.
+  const endpoint=predictionCache[predictionCache.length-1];
+  const endPoint=endpoint&&project(endpoint.position,view,endpoint.time);
+  if(endPoint){context.save();context.beginPath();context.arc(endPoint.x,endPoint.y,5,0,Math.PI*2);context.fillStyle='#5bffd5';context.fill();context.font='bold 11px system-ui';context.fillText('+'+predictionMinutes+' 分',endPoint.x+8,endPoint.y-8);context.restore()}
  }
  visibleSatellites=[];
  const labels=[];

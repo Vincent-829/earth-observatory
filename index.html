@@ -287,6 +287,12 @@ angularVelocityX=angularVelocityX*.55+(deltaLon/dt)*.45;
 angularVelocityY=angularVelocityY*.55+(deltaLat/dt)*.45;
 lastMoveTime=now;lastX=e.clientX;lastY=e.clientY});
 cv.addEventListener('pointerup',e=>{const wasTap=activeTouches.size===1&&!moved&&!pinchUsed;activeTouches.delete(e.pointerId);drag=false;if(reduceMotion.matches||!moved||pinchUsed){angularVelocityX=angularVelocityY=0}if(wasTap)hit(e);if(activeTouches.size===0){pinchDistance=0;pinchUsed=false}else{pinchUsed=true}});
+cv.addEventListener('lostpointercapture',e=>{
+ activeTouches.delete(e.pointerId);drag=false;moved=false;
+ angularVelocityX=angularVelocityY=0;
+ if(!activeTouches.size){pinchDistance=0;pinchUsed=false}
+});
+window.addEventListener('blur',()=>{activeTouches.clear();drag=false;moved=false;pinchDistance=0;pinchUsed=false;angularVelocityX=angularVelocityY=0});
 cv.addEventListener('pointercancel',e=>{activeTouches.delete(e.pointerId);drag=false;angularVelocityX=angularVelocityY=0;if(!activeTouches.size){pinchDistance=0;pinchUsed=false}});cv.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.65,Math.min(2.4,zoom-e.deltaY*.001))},{passive:false});document.getElementById('spin').onclick=e=>{spin=!spin;e.target.textContent=spin?'Ⅱ 自轉':'▶ 自轉'};document.getElementById('reset').onclick=()=>{focusTween=null;angularVelocityX=angularVelocityY=0;lon=115;lat=20;zoom=1;selected=null;document.getElementById('countrycard').classList.remove('open')};document.getElementById('plus').onclick=()=>zoom=Math.min(2.4,zoom+.12);document.getElementById('minus').onclick=()=>zoom=Math.max(.65,zoom-.12);
 function find(){let q=document.getElementById('query').value.trim().toLowerCase();if(!q)return;let f=FEATURES.find(f=>[f.name,ZH[f.name],COUNTRY_META[f.name]?.zh,LOCAL[f.name],EXTRA_INFO[f.name]?.[2],f.iso].some(n=>n&&n.toLowerCase().includes(q)));if(!f){document.getElementById('status').textContent='⚠ 找不到該國家（目前涵蓋 '+FEATURES.length+' 個區域）';return}select(f);let ring=rings(f).sort((a,b)=>b.length-a.length)[0];let coords=ring.map(a=>a[0]);let xs=coords.map(v=>v<0?v+360:v);let min=Math.min(...xs),max=Math.max(...xs);moveToRegion((max-min>180?ring[0][0]:(min+max)/2)%360,ring.reduce((s,a)=>s+a[1],0)/ring.length)}document.getElementById('find').onclick=find;document.getElementById('query').addEventListener('keydown',e=>{if(e.key==='Enter')find()});document.getElementById('status').textContent='● 離線國界已載入 · '+FEATURES.length+' 個區域';requestAnimationFrame(draw);
 
@@ -943,7 +949,7 @@ listObserver.observe($('sat62-list'),{childList:true});
 function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
- highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(true);window.dispatchEvent(new CustomEvent('earth:satellite-selected',{detail:{id:record.id,name:record.name,satrec:record.satrec,epoch:record.epoch}}));detail.hidden=false;updateDetails();
+ highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(false);window.dispatchEvent(new CustomEvent('earth:satellite-selected',{detail:{id:record.id,name:record.name,satrec:record.satrec,epoch:record.epoch}}));detail.hidden=false;updateDetails();
  // Satellite details are presented in an independent orbit-following card.
 }
 $('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false)});
@@ -1547,3 +1553,26 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  if(card&&app&&card.parentElement!==app)app.appendChild(card);
 })();
 </script>
+
+<!-- EARTH 7.0.8: compact controls anchored above the country identification panel -->
+<style id="earth70-bottom-left-dock">
+@media(min-width:850px){
+ #app .info{
+  left:22px!important;bottom:calc(16px + env(safe-area-inset-bottom,0px))!important;
+  max-height:145px!important;overflow:auto!important;
+ }
+ #sat61-toggle,#advanced-open{
+  position:fixed!important;top:auto!important;right:auto!important;
+  bottom:calc(174px + env(safe-area-inset-bottom,0px))!important;
+  min-height:42px!important;
+ }
+ #sat61-toggle{left:28px!important}
+ #advanced-open{left:198px!important}
+ #sat61-panel{bottom:calc(225px + env(safe-area-inset-bottom,0px))!important}
+}
+@media(min-width:850px) and (max-height:680px){
+ #app .info{max-height:115px!important}
+ #sat61-toggle,#advanced-open{bottom:calc(142px + env(safe-area-inset-bottom,0px))!important}
+ #sat61-panel{bottom:calc(190px + env(safe-area-inset-bottom,0px))!important}
+}
+</style>

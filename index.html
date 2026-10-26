@@ -1285,3 +1285,55 @@ function forecast(){
 }
 $('sat69-forecast').onclick=forecast;
 })();</script>
+<!-- EARTH 7.0 responsive viewport and controls: additive compatibility layer -->
+<style id="earth70-responsive">
+html,body{width:100%;min-height:100%;margin:0;overflow-x:hidden}
+#app{height:100vh;height:100dvh;min-height:0!important;max-height:100dvh;isolation:isolate}
+@supports(height:100svh){#app{min-height:100svh!important}}
+#app canvas{max-width:100%;max-height:100%}
+#sat61-panel,#sat64-details,#countrycard{overscroll-behavior:contain}
+#sat64-details{max-height:min(65dvh,650px);overflow-y:auto;-webkit-overflow-scrolling:touch}
+#sat69-tools{max-width:100%;overflow-wrap:anywhere}
+#sat69-model{max-width:100%}
+#sat69-day-toggle{bottom:max(12px,env(safe-area-inset-bottom,0px));max-width:calc(100vw - 24px)}
+button,input,select{max-width:100%}
+@media(max-width:849px){
+ .search{top:clamp(65px,12dvh,102px);left:10px;right:10px}
+ .control{right:10px;top:clamp(125px,23dvh,155px)}
+ .info{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));max-height:30dvh;overflow:auto}
+ #countrycard{bottom:calc(10px + env(safe-area-inset-bottom,0px));max-height:58dvh}
+ #sat64-details{max-height:55dvh}
+}
+@media(max-width:700px){
+ #sat69-day-toggle{bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+ #sat69-tools .sat69-line{align-items:stretch}
+ #sat69-tools input,#sat69-tools select{min-height:44px}
+}
+@media(max-height:600px){
+ .search{top:56px}
+ .control{top:108px;gap:4px}
+ .info{max-height:25dvh}
+ #sat64-details{max-height:42dvh}
+ #sat69-day-toggle{right:8px;bottom:calc(6px + env(safe-area-inset-bottom,0px))}
+}
+</style>
+<script id="earth70-viewport">(()=>{
+'use strict';
+const app=document.getElementById('app');
+if(!app)return;
+let raf=0;
+function resize(){
+ if(raf)cancelAnimationFrame(raf);
+ raf=requestAnimationFrame(()=>{
+  raf=0;
+  const viewport=window.visualViewport;
+  const available=viewport?Math.min(window.innerHeight,viewport.height):window.innerHeight;
+  if(Number.isFinite(available)&&available>0)app.style.setProperty('--earth-visible-height',available+'px');
+  document.documentElement.style.setProperty('--earth-safe-bottom','env(safe-area-inset-bottom, 0px)');
+ });
+}
+resize();
+window.addEventListener('resize',resize,{passive:true});
+window.addEventListener('orientationchange',resize,{passive:true});
+window.visualViewport?.addEventListener('resize',resize,{passive:true});
+})();</script>

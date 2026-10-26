@@ -1576,3 +1576,45 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  #sat61-panel{bottom:calc(190px + env(safe-area-inset-bottom,0px))!important}
 }
 </style>
+
+<!-- EARTH 7.0.9: one measured bottom-left layout instead of conflicting fixed offsets -->
+<style id="earth70-measured-dock">
+@media(min-width:850px){
+ #app .info{
+  position:absolute!important;left:22px!important;right:auto!important;
+  bottom:16px!important;width:min(560px,calc(100vw - 44px))!important;
+  max-width:calc(100vw - 44px)!important;
+  max-height:min(25dvh,180px)!important;box-sizing:border-box!important;
+ }
+ #sat61-toggle,#advanced-open{
+  position:fixed!important;top:auto!important;right:auto!important;
+  bottom:calc(var(--earth70-info-top-gap,174px) + env(safe-area-inset-bottom,0px))!important;
+  min-height:42px!important;margin:0!important;
+ }
+ #sat61-toggle{left:28px!important}
+ #advanced-open{left:198px!important}
+ #sat61-panel{bottom:calc(var(--earth70-info-top-gap,174px) + 54px)!important}
+}
+</style>
+<script id="earth70-measured-dock-script">
+(()=>{
+ const info=document.querySelector('#app .info');
+ const sat=document.getElementById('sat61-toggle');
+ const share=document.getElementById('advanced-open');
+ if(!info||!sat||!share)return;
+ let scheduled=false;
+ const sync=()=>{
+  scheduled=false;
+  if(window.innerWidth<850)return;
+  const box=info.getBoundingClientRect();
+  const gap=12;
+  const distance=Math.max(65,Math.round(window.innerHeight-box.top+gap));
+  document.documentElement.style.setProperty('--earth70-info-top-gap',distance+'px');
+ };
+ const schedule=()=>{if(!scheduled){scheduled=true;requestAnimationFrame(sync)}};
+ window.addEventListener('resize',schedule,{passive:true});
+ window.visualViewport?.addEventListener('resize',schedule,{passive:true});
+ if(typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(info);
+ schedule();
+})();
+</script>

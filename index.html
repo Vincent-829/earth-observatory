@@ -1465,3 +1465,38 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  #countrycard.open{max-height:min(70dvh,720px)!important;overflow-y:auto!important}
 }
 </style>
+
+<!-- EARTH 7.0.6: resolve stacking context by moving dossier into top-level layer -->
+<style id="earth70-dossier-overlay">
+#countrycard.open{
+ position:fixed!important;
+ z-index:2147483000!important;
+ top:auto!important;
+ bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;
+ left:16px!important;
+ right:auto!important;
+ width:min(650px,calc(100vw - 32px))!important;
+ max-width:calc(100vw - 32px)!important;
+ max-height:min(75dvh,calc(100dvh - 30px))!important;
+ overflow-y:auto!important;
+ overflow-x:hidden!important;
+ isolation:isolate!important;
+}
+#countrycard.open #closecard{
+ position:sticky!important;top:0!important;float:right!important;
+ width:auto!important;min-width:78px!important;
+ z-index:3!important;
+}
+@media(max-width:849px){
+ #countrycard.open{left:10px!important;right:10px!important;width:auto!important;max-width:none!important;
+ bottom:calc(68px + env(safe-area-inset-bottom,0px))!important;max-height:calc(100dvh - 95px)!important}
+}
+</style>
+<script id="earth70-dossier-portal">
+(()=>{
+ const card=document.getElementById('countrycard');
+ if(!card)return;
+ // An ancestor with isolation/transform can trap z-index; portal into body avoids that.
+ if(card.parentElement!==document.body)document.body.appendChild(card);
+})();
+</script>

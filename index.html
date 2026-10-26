@@ -991,6 +991,7 @@ function paint(t){
  const view=window.earthOrbitalView();
  visibleSatellites=[];
  const labels=[];
+ clickableSatelliteLabels=[];
  const occupied=[];
  // ISS is always considered first, so secondary labels cannot hide it.
  const sorted=[...cache].sort((a,b)=>Number(b.rec.id===25544)-Number(a.rec.id===25544));
@@ -1026,9 +1027,10 @@ function paint(t){
     chosen=box;break;
    }
    // Dense clusters: retain marker/orbit, suppress only lower-priority text.
-   if(chosen){occupied.push(chosen);labels.push({text,box:chosen,isISS});}
+   if(chosen){occupied.push(chosen);labels.push({text,box:chosen,isISS,id:entry.rec.id});}
   }
  }
+ clickableSatelliteLabels=labels.map(({box,id})=>({box,id}));
  // Draw labels last to avoid having subsequent orbit lines cross their text.
  for(const label of labels){
   const {box,text,isISS}=label;
@@ -1045,6 +1047,7 @@ function paint(t){
 // Touch-first hit testing. The globe canvas uses pointer capture and may not
 // emit a click after a touch; handle pointerup during capture instead.
 const tapStarts=new Map();
+let clickableSatelliteLabels=[];
 $('app').addEventListener('pointerdown',event=>{
  if(event.target.id!=='view'&&event.target.id!=='sat63-overlay')return;
  tapStarts.set(event.pointerId,{x:event.clientX,y:event.clientY,t:performance.now()});
@@ -1057,6 +1060,17 @@ $('app').addEventListener('pointerup',event=>{
  const bounds=overlay.getBoundingClientRect();
  const x=event.clientX-bounds.left,y=event.clientY-bounds.top;
  const threshold=event.pointerType==='touch'?29:19;
+ // Label hit boxes have priority: tapping the NORAD number opens that satellite.
+ const padding=event.pointerType==='touch'?7:3;
+ const hit=clickableSatelliteLabels.find(({box})=>x>=box.x-padding&&x<=box.x+box.w+padding&&y>=box.y-padding&&y<=box.y+box.h+padding);
+ if(hit){
+  event.stopImmediatePropagation();
+  selectSatellite(hit.id);
+  const record=records.find(rec=>rec.id===hit.id);
+  setMessage('衛星詳細資訊：'+(record?.name||'NORAD #'+hit.id));
+  detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+  return;
+ }
  let nearest=null,distance=threshold*threshold;
  for(const item of visibleSatellites){
   const d=(item.point.x-x)**2+(item.point.y-y)**2;

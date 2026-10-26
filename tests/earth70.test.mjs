@@ -22,3 +22,23 @@ test('existing orbital capabilities are preserved', () => {
   assert.ok(html.includes(id), 'Missing existing feature: '+id);
  }
 });
+
+test('country info controls use measured docking rather than a guessed offset', () => {
+ assert.match(html, /id="earth70-measured-dock"/);
+ assert.match(html, /getBoundingClientRect\(\)/);
+ assert.match(html, /--earth70-info-top-gap/);
+ assert.match(html, /ResizeObserver/);
+});
+test('satellite selection does not implicitly enable follow', () => {
+ const selection = html.match(/function selectSatellite\(id\)\{[\s\S]*?\n\}/)?.[0];
+ assert.ok(selection, 'Satellite selection handler missing');
+ assert.match(selection, /setFollow\(false\)/);
+ assert.doesNotMatch(selection, /setFollow\(true\)/);
+ assert.match(html, /lostpointercapture/);
+ assert.match(html, /window\.addEventListener\('blur'/);
+});
+test('selected satellite has an independent tracking card', () => {
+ assert.match(html, /id="earth70-satellite-card-portal"/);
+ assert.match(html, /detail\.style\.left/);
+ assert.match(html, /detail\.style\.top/);
+});

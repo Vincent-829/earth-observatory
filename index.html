@@ -1442,3 +1442,26 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  #sat61-panel{bottom:calc(215px + env(safe-area-inset-bottom,0px))!important}
 }
 </style>
+
+<!-- EARTH 7.0.5: country dossier takes priority over floating controls -->
+<style id="earth70-country-layer">
+/* Country dossier must render above satellite/share controls and all ordinary floating toolbars. */
+#countrycard,#countrycard.open{
+ z-index:1000!important;
+ isolation:isolate;
+}
+#countrycard.open{
+ pointer-events:auto!important;
+}
+/* Keep its close control accessible even when the dossier scrolls. */
+#countrycard .close,#closecard{
+ position:sticky!important;
+ top:0;
+ z-index:2!important;
+}
+/* Toolbars remain usable when the dossier is closed. */
+#sat61-toggle,#advanced-open,#sat69-day-toggle{z-index:24!important}
+@media(min-width:850px){
+ #countrycard.open{max-height:min(70dvh,720px)!important;overflow-y:auto!important}
+}
+</style>

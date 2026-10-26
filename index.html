@@ -751,6 +751,178 @@ async function load(){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),14000);
  try{
   const results=await Promise.allSettled(groups.map(async group=>{
+  for(const url of ['./data/'+group+'.json','https://celestrak.org/NORAD/elements/gp.php?GROUP='+encodeURIComponent(group)+'&FORMAT=JSON']){
+   try{const res=await fetch(url,{signal:controller.signal,cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const data=await res.json();if(!Array.isArray(data)||!data.length)throw Error('Empty JSON');return data;}catch(err){}
+  }
+  throw Error('OMM unavailable '+group);
+ }));
+ const byId=new Map();
+  for(const result of results)if(result.status==='fulfilled')
+   for(const item of result.value){
+    const id=Number(item.NORAD_CAT_ID);
+    if(selectedIds.has(id)&&Number.isFinite(Number(item.MEAN_MOTION))&&item.EPOCH)byId.set(id,item);
+   }
+  const rows=[...byId.values()].sort((a,b)=>Number(b.NORAD_CAT_ID===25544)-Number(a.NORAD_CAT_ID===25544)).slice(0,50);
+  window.earthSatelliteOMM=rows;
+  render(rows);count.textContent=rows.length+' 顆';
+  updated.textContent=dateText(new Date());
+  const good=results.filter(r=>r.status==='fulfilled').length;
+  status.textContent=rows.length?(good===groups.length?'已取得資料':'部分來源成功'):'無可用資料';
+  notice.textContent=rows.length?'軌道資料已載入；衛星位置與軌道線由 SGP4 模型推算。':'尚無衛星資料。請確認 GitHub Actions 已完成衛星資料更新，或稍後重試。';
+ }catch(err){
+  status.textContent='載入失敗';
+  notice.textContent='資料讀取失敗：'+(err.name==='AbortError'?'連線逾時':err.message);
+ }finally{clearTimeout(timer);pending=false;refresh.disabled=false}
+}
+refresh.addEventListener('click',load);
+$('sat61-toggle').addEventListener('click',()=>{if($('sat61-toggle').getAttribute('aria-pressed')==='true'&&!window.earthSatelliteOMM)load()});
+})();</script>
+
+<style id="reference-visual-61">
+/* Reference-matched brighter cobalt/cyan theme. No existing data or travel feature removed. */
+body{background:#06152f;color:#e6f9ff}
+#app{background:radial-gradient(ellipse at 50% 55%,#0a488a 0%,#072750 50%,#06122f 100%)}
+button,input{background:linear-gradient(140deg,rgba(10,90,161,.96),rgba(2,39,92,.96));color:#eafaff;border:1.5px solid #34c8ff;border-radius:11px;box-shadow:inset 0 1px 9px #38d6ff25,0 0 13px #00b8ff24}
+.info{background:linear-gradient(135deg,rgba(1,37,79,.97),rgba(2,29,66,.95));border:1.5px solid #36caff;border-radius:17px;box-shadow:0 0 21px #00c8ff36}
+#sat61-toggle{background:linear-gradient(120deg,#0874b9,#0494ba);border:2px solid #5deaff;box-shadow:0 0 18px #04d8ff65}
+#ref61-dock{display:none}
+#ref61-menu{display:none}
+@media(max-width:849px){
+ .top{top:12px;left:13px}.top strong{font-size:clamp(17px,4.7vw,23px)}
+ .sub{display:none}.status{margin-top:6px;color:#50ecff}
+ #visit-counter{top:70px}
+ .search{top:101px;left:12px;right:12px;z-index:9}
+ .search input,.search button{min-height:42px}
+ .control{top:152px;left:12px;right:12px;gap:7px}
+ .control button{min-height:40px}
+ #visits-open,#progress-open,#timeline-open,#advanced-open{display:none!important}
+ .info{bottom:calc(86px + env(safe-area-inset-bottom,0px))!important;left:12px;right:12px;padding:12px 14px;z-index:5}
+ .info small{font-size:12px}.info strong{font-size:17px}.info span{font-size:12px}
+ #ref61-dock{display:grid;position:fixed;z-index:25;bottom:calc(10px + env(safe-area-inset-bottom,0px));left:10px;right:10px;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+ #ref61-dock button{min-width:0;min-height:49px;padding:8px 2px;font-size:clamp(11px,3vw,14px);white-space:nowrap;border-radius:12px}
+ #sat61-toggle{position:static!important;width:100%!important;min-height:49px!important;padding:8px 2px!important;font-size:clamp(11px,3vw,14px)!important;box-shadow:0 0 15px #00d7ff66}
+ #sat61-panel{position:fixed;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:31}
+ #ref61-menu{position:fixed;z-index:30;left:12px;right:12px;bottom:calc(75px + env(safe-area-inset-bottom,0px));max-height:min(50dvh,400px);overflow:auto;border:1.5px solid #49d5ff;border-radius:14px;background:linear-gradient(140deg,#062c58f7,#041631fa);padding:13px;box-shadow:0 0 24px #00aaff65}
+ #ref61-menu:not([hidden]){display:block}
+ #ref61-menu h3{margin:0 0 10px;font-size:15px;color:#c7f7ff}
+ #ref61-menu .ref-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #ref61-menu button{padding:10px 6px;min-height:42px}
+ #visits-panel,#progress-panel,#timeline-panel,#advanced-panel{top:auto!important;bottom:calc(77px + env(safe-area-inset-bottom,0px))!important;max-height:55dvh!important;z-index:35!important}
+ #countrycard{bottom:calc(77px + env(safe-area-inset-bottom,0px));max-height:62dvh}
+}
+@media(min-width:850px){#ref61-dock{display:none}}
+</style>
+<div id="ref61-dock" aria-label="地球儀功能列"><div id="ref61-satellite-slot"></div><button type="button" data-refmenu="layers">◉ 圖層</button><button type="button" data-refmenu="settings">⚙ 設定</button><button type="button" data-refmenu="help">▣ 說明</button></div>
+<section id="ref61-menu" hidden aria-label="地球儀工具選單"><h3 id="ref61-menu-title"></h3><div class="ref-actions" id="ref61-menu-actions"></div><button id="ref61-menu-close" type="button" style="margin-top:10px;width:100%">關閉 ×</button></section>
+<script id="reference-visual-controls">(()=>{
+ const dock=document.getElementById('ref61-dock'),slot=document.getElementById('ref61-satellite-slot'),sat=document.getElementById('sat61-toggle');
+ if(!dock||!sat)return;
+ const originalParent=sat.parentNode,originalNext=sat.nextSibling;
+ const menu=document.getElementById('ref61-menu'),title=document.getElementById('ref61-menu-title'),actions=document.getElementById('ref61-menu-actions');
+ const compact=window.matchMedia('(max-width:849px)');
+ function place(){if(compact.matches){slot.append(sat)}else if(originalNext&&originalNext.parentNode===originalParent){originalParent.insertBefore(sat,originalNext)}else{originalParent.append(sat)}menu.hidden=true}
+ compact.addEventListener('change',place);place();
+ const menus={layers:[['我的足跡','visits-open'],['旅行統計','progress-open'],['旅行時間軸','timeline-open']],settings:[['旅行功能','advanced-open'],['重設地球','reset'],['暫停／啟動自轉','spin']],help:[['搜尋國家','query'],['國家資訊','name'],['旅行功能','advanced-open']]};
+ const names={layers:'◉ 圖層與旅行資料',settings:'⚙ 地球儀設定',help:'▣ 操作說明'};
+ dock.querySelectorAll('[data-refmenu]').forEach(b=>b.addEventListener('click',()=>{
+  const k=b.dataset.refmenu;if(!menu.hidden&&title.textContent===names[k]){menu.hidden=true;return}
+  title.textContent=names[k];actions.replaceChildren();
+  menus[k].forEach(([label,id])=>{const item=document.createElement('button');item.type='button';item.textContent=label;item.addEventListener('click',()=>{
+   menu.hidden=true;const target=document.getElementById(id);if(!target)return;
+   if(id==='query'){target.focus();return}if(id==='name'){document.querySelector('.info')?.scrollIntoView({block:'nearest'});return}target.click();
+  });actions.append(item)});
+  if(k==='help'){const p=document.createElement('p');p.textContent='拖曳旋轉地球、雙指縮放；點選國家可查看資訊。衛星模式 6.3 支援 SGP4 衛星位置與軌道線。';p.style.cssText='font-size:12px;line-height:1.6';actions.append(p)}
+  menu.hidden=false;
+ }));
+ document.getElementById('ref61-menu-close').addEventListener('click',()=>menu.hidden=true);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')menu.hidden=true});
+})();</script>
+\n<style id="sat63-fix-css">
+#app{position:relative}#sat63-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;display:block}
+#sat63-alert{font-size:12px;line-height:1.5;color:#ffdc98;padding:5px 0}
+</style>
+
+<style id="sat64-style">
+#sat64-details{margin:12px 0;padding:12px;border:1px solid #56d8ee;border-radius:12px;background:linear-gradient(145deg,#062e4a,#071b31);box-shadow:0 0 15px #00d4ff22}
+#sat64-details[hidden]{display:none!important}.sat64-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;font-size:15px;color:#c6f9ff}
+#sat64-close{width:32px;height:32px;padding:0;border:1px solid #4bacc8;border-radius:8px;background:#0b3450;color:#e8ffff;font-size:20px}
+.sat64-row{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #4c8ba344}
+.sat64-row span{color:#acd2e3}.sat64-row strong{font-variant-numeric:tabular-nums;text-align:right;overflow-wrap:anywhere}
+#sat64-disclaimer{display:block;color:#9ec9d9;line-height:1.5;margin-top:9px}
+#sat62-list .sat62-item{cursor:pointer}#sat62-list .sat62-item:focus-visible{outline:2px solid #75f2ff;outline-offset:2px}
+</style>
+<script id="sat63-working-orbits">(()=>{
+'use strict';
+const $=id=>document.getElementById(id);
+const panel=$('sat61-panel'),toggle=$('sat61-toggle'),status=$('sat61-status'),notice=$('sat62-notice');
+const overlay=$('sat63-overlay'),context=overlay.getContext('2d');
+if(!overlay.parentElement?.matches('#app'))$('app').appendChild(overlay);
+const message=document.createElement('div');message.id='sat63-alert';message.textContent='開啟衛星模式後讀取軌道資料。';$('sat62-list').before(message);
+let engine=null,records=[],cache=[],lastSample=0,active=false,loading=false;
+let visibleSatellites=[];let highlightedId=null;
+const detail=$('sat64-details'),detailName=$('sat64-name'),detailData=$('sat64-data');
+let selectedRecord=null,lastDetailUpdate=0;
+function detailRow(label,value){
+ const line=document.createElement('div');line.className='sat64-row';
+ const a=document.createElement('span');a.textContent=label;
+ const b=document.createElement('strong');b.textContent=value;
+ line.append(a,b);detailData.append(line);
+}
+function updateDetails(){
+ if(!selectedRecord||!window.earthSGP4)return;
+ const sat=window.earthSGP4,now=new Date(),pv=sat.propagate(selectedRecord.satrec,now);
+ if(!pv?.position||typeof pv.position==='boolean'){
+  detailData.replaceChildren();detailRow('狀態','SGP4 無法推算目前位置');return;
+ }
+ const gmst=sat.gstime(now),geo=sat.eciToGeodetic(pv.position,gmst);
+ const deg=180/Math.PI,lat=geo.latitude*deg,lon=((geo.longitude*deg+540)%360)-180;
+ const velocity=pv.velocity,spd=velocity&&typeof velocity!=='boolean'?Math.hypot(velocity.x,velocity.y,velocity.z):NaN;
+ const epoch=new Date(/(?:Z|[+-]\d\d:?\d\d)$/.test(selectedRecord.epoch)?selectedRecord.epoch:selectedRecord.epoch+'Z');
+ detailName.textContent=(selectedRecord.id===25544?'🛰 ISS 國際太空站':selectedRecord.name);
+ const issWatch=document.getElementById('sat65-iss-detail-button');
+ if(issWatch)issWatch.hidden=selectedRecord.id!==25544;
+ detailData.replaceChildren();
+ detailRow('NORAD 編號','#'+selectedRecord.id);
+ detailRow('緯度',Number.isFinite(lat)?Math.abs(lat).toFixed(3)+'° '+(lat>=0?'N':'S'):'無法取得');
+ detailRow('經度',Number.isFinite(lon)?Math.abs(lon).toFixed(3)+'° '+(lon>=0?'E':'W'):'無法取得');
+ detailRow('高度',Number.isFinite(geo.height)?geo.height.toFixed(1)+' km':'無法取得');
+ detailRow('軌道速度',Number.isFinite(spd)?spd.toFixed(2)+' km/s':'無法取得');
+ detailRow('軌道資料時間',Number.isFinite(epoch.getTime())?epoch.toLocaleString('zh-TW',{hour12:false}):selectedRecord.epoch||'未知');
+ detailRow('推算時間',now.toLocaleString('zh-TW',{hour12:false}));
+}
+const listObserver=new MutationObserver(()=>{
+ for(const item of $('sat62-list').querySelectorAll('.sat62-item')){
+  if(item.dataset.norad)continue;
+  const match=item.textContent.match(/#(\d+)/);
+  if(match){item.dataset.norad=match[1];item.tabIndex=0;item.setAttribute('role','button');item.setAttribute('aria-label','查看衛星 '+item.textContent.trim()+' 的詳細資料')}
+ }
+});
+listObserver.observe($('sat62-list'),{childList:true});
+function selectSatellite(id){
+ const record=records.find(r=>r.id===Number(id));
+ if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
+ highlightedId=record.id;selectedRecord=record;detail.hidden=false;updateDetails();
+ if(panel.hidden)panel.hidden=false;
+}
+$('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null});
+$('sat62-list').addEventListener('click',event=>{const item=event.target.closest('[data-norad]');if(item)selectSatellite(item.dataset.norad)});
+$('sat62-list').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-norad]')){event.preventDefault();selectSatellite(event.target.dataset.norad)}});
+
+const lib='https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/+esm';
+function setMessage(msg){message.textContent=msg}
+function ensureEngine(){
+ if(window.earthSGP4?.twoline2satrec)return Promise.resolve(window.earthSGP4);
+ if(engine)return engine;
+ engine=import(lib).then(mod=>{
+  const sat=mod.default?.twoline2satrec?mod.default:mod;
+  if(!sat.twoline2satrec||!sat.propagate)throw Error('SGP4 模組不完整');
+  window.earthSGP4=sat;return sat;
+ }).catch(err=>{engine=null;throw Error('無法載入 SGP4：'+err.message)});
+ return engine;
+}
+async function fetchTLE(){
+ const groups=['stations','weather','resource','science','visual'];
+ const results=await Promise.allSettled(groups.map(async group=>{
   for(const url of ['./data/'+group+'.tle','https://celestrak.org/NORAD/elements/gp.php?GROUP='+group+'&FORMAT=TLE']){
    try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw Error('HTTP '+res.status);const body=await res.text();if(!body.includes('1 ')||!body.includes('2 '))throw Error('Invalid TLE');return body;}catch(err){}
   }

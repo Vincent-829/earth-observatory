@@ -868,6 +868,7 @@ let engine=null,records=[],cache=[],lastSample=0,active=false,loading=false;
 let visibleSatellites=[];let highlightedId=null;
 const detail=$('sat64-details'),detailName=$('sat64-name'),detailData=$('sat64-data');
 let selectedRecord=null,lastDetailUpdate=0,autoFollow=false,lastFollowAt=0;
+let predictionMinutes=60,predictionCache=[],predictionFor=null,predictionAt=0;
 const followButton=document.createElement('button');
 followButton.id='sat67-follow';followButton.type='button';followButton.textContent='◎ 開始自動追蹤';
 followButton.setAttribute('aria-pressed','false');
@@ -881,6 +882,15 @@ function setFollow(on){
  followStatus.textContent=autoFollow?'追蹤中：地球視角會持續轉向所選衛星；手動拖曳時暫停跟隨。':'點選開始追蹤，讓地球持續轉向衛星目前位置。';
 }
 followButton.addEventListener('click',()=>setFollow(!autoFollow));
+const predictionControls=document.createElement('div');predictionControls.id='sat68-prediction-controls';predictionControls.innerHTML='<label for="sat68-horizon">預測未來軌道</label><select id="sat68-horizon" aria-label="未來軌道預測時間"><option value="0">關閉</option><option value="30">30 分鐘</option><option value="60" selected>60 分鐘</option><option value="90">90 分鐘</option></select><small>青色虛線為未來預測位置，依 SGP4 軌道模型推算；不是即時量測。</small>';
+followStatus.after(predictionControls);
+predictionControls.querySelector('select').addEventListener('change',e=>{predictionMinutes=Number(e.target.value);predictionAt=0;});
+function buildPrediction(){
+ if(!selectedRecord||!predictionMinutes||!window.earthSGP4)return [];
+ const now=Date.now(),result=[];
+ for(let m=0;m<=predictionMinutes;m+=2){const time=new Date(now+m*60000),pv=window.earthSGP4.propagate(selectedRecord.satrec,time);result.push(pv?.position&&typeof pv.position!=='boolean'?{position:pv.position,time}:null)}
+ return result;
+}
 function detailRow(label,value){
  const line=document.createElement('div');line.className='sat64-row';
  const a=document.createElement('span');a.textContent=label;
@@ -906,6 +916,11 @@ function updateDetails(){
  detailRow('經度',Number.isFinite(lon)?Math.abs(lon).toFixed(3)+'° '+(lon>=0?'E':'W'):'無法取得');
  detailRow('高度',Number.isFinite(geo.height)?geo.height.toFixed(1)+' km':'無法取得');
  detailRow('軌道速度',Number.isFinite(spd)?spd.toFixed(2)+' km/s':'無法取得');
+ const inclination=selectedRecord.satrec?.inclo,meanMotion=selectedRecord.satrec?.no;
+ detailRow('軌道傾角',Number.isFinite(inclination)?(inclination*180/Math.PI).toFixed(2)+'°':'資料不足');
+ detailRow('軌道週期',Number.isFinite(meanMotion)&&meanMotion>0?(2*Math.PI/meanMotion).toFixed(1)+' 分鐘':'資料不足');
+ detailRow('所屬國家／機構','資料不足（軌道資料不含可靠歸屬）');
+ detailRow('衛星用途','資料不足（需另行核對衛星目錄）');
  detailRow('軌道資料時間',Number.isFinite(epoch.getTime())?epoch.toLocaleString('zh-TW',{hour12:false}):selectedRecord.epoch||'未知');
  detailRow('推算時間',now.toLocaleString('zh-TW',{hour12:false}));
 }
@@ -920,7 +935,7 @@ listObserver.observe($('sat62-list'),{childList:true});
 function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
- highlightedId=record.id;selectedRecord=record;setFollow(true);detail.hidden=false;updateDetails();
+ highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(true);detail.hidden=false;updateDetails();
  if(panel.hidden)panel.hidden=false;
  if(window.matchMedia('(max-width:700px)').matches)detail.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -1023,6 +1038,13 @@ function paint(t){
   }
  }
  const view=window.earthOrbitalView();
+ if(selectedRecord&&predictionMinutes){
+  if(predictionFor!==selectedRecord.id||t-predictionAt>30000){predictionCache=buildPrediction();predictionFor=selectedRecord.id;predictionAt=t}
+  context.save();context.beginPath();context.setLineDash([6,5]);context.lineWidth=2.2;context.strokeStyle='rgba(91,255,213,.95)';
+  let begun=false;
+  for(const step of predictionCache){const p=step&&project(step.position,view,step.time);if(!p){begun=false;continue}if(!begun){context.moveTo(p.x,p.y);begun=true}else context.lineTo(p.x,p.y)}
+  context.stroke();context.restore();
+ }
  visibleSatellites=[];
  const labels=[];
  clickableSatelliteLabels=[];
@@ -1140,7 +1162,7 @@ $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新�
 #sat65-source-choices button{min-width:0;padding:9px 4px;font-size:12px;border-radius:8px;border:1px solid #378db5;background:#092a43;color:#d3f6ff}
 #sat65-source-choices button[aria-pressed="true"]{background:#096c98;border-color:#79eaff}
 #sat65-open-official{display:block;text-align:center;padding:12px;border:1px solid #378db5;border-radius:8px;margin-top:9px;text-decoration:none}
-</style><style id="sat67-mobile">
+</style><style id="sat68-prediction-style">#sat68-prediction-controls{display:grid;gap:7px;padding:9px 0;border-bottom:1px solid #19516a}#sat68-prediction-controls label{font-weight:700}#sat68-prediction-controls select{min-height:44px;border:1px solid #48b7e0;border-radius:8px;background:#082c43;color:#e4fbff;padding:7px}#sat68-prediction-controls small{color:#a9d3e0;line-height:1.5}</style><style id="sat67-mobile">
 @media(max-width:700px){
  #sat61-panel{left:3vw!important;right:3vw!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:94vw!important;max-width:420px!important;max-height:min(68dvh,620px)!important;overflow-y:auto!important;overscroll-behavior:contain;border-radius:18px!important;padding-bottom:max(14px,env(safe-area-inset-bottom))!important}
  #sat64-details{scroll-margin-top:16px;position:relative;background:rgba(6,44,66,.96);border:1px solid #4ccde5;border-radius:12px;padding:10px;margin-top:10px}

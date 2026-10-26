@@ -1057,11 +1057,26 @@ function paint(t){
   const cardW=detail.offsetWidth||300,cardH=detail.offsetHeight||260;
   if(point&&point.x>=0&&point.y>=0&&point.x<=rect.width&&point.y<=rect.height){
    detail.style.visibility='visible';
-   const gap=30,margin=10;
-   const x=point.x+gap+cardW<rect.width-margin?point.x+gap:point.x-gap-cardW;
-   const y=Math.max(margin,Math.min(rect.height-cardH-margin,point.y-cardH/2));
-   detail.style.left=Math.max(margin,Math.min(rect.width-cardW-margin,x))+'px';
-   detail.style.top=y+'px';
+   const margin=12,gap=38;
+   const maxX=Math.max(margin,rect.width-cardW-margin);
+   const maxY=Math.max(margin,rect.height-cardH-margin);
+   const candidates=[
+    {x:point.x+gap,y:point.y-cardH/2},
+    {x:point.x-gap-cardW,y:point.y-cardH/2},
+    {x:point.x-cardW/2,y:point.y-gap-cardH},
+    {x:point.x-cardW/2,y:point.y+gap}
+   ];
+   const placed=candidates.map(candidate=>{
+    const x=Math.max(margin,Math.min(maxX,candidate.x));
+    const y=Math.max(margin,Math.min(maxY,candidate.y));
+    const nearestX=Math.max(x,Math.min(point.x,x+cardW));
+    const nearestY=Math.max(y,Math.min(point.y,y+cardH));
+    const distance=Math.hypot(point.x-nearestX,point.y-nearestY);
+    const overflow=Math.abs(x-candidate.x)+Math.abs(y-candidate.y);
+    return {x,y,score:distance*10-overflow};
+   }).sort((a,b)=>b.score-a.score)[0];
+   detail.style.left=placed.x+'px';
+   detail.style.top=placed.y+'px';
   }else{
    detail.style.visibility='hidden';
   }
@@ -1615,6 +1630,46 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  window.addEventListener('resize',schedule,{passive:true});
  window.visualViewport?.addEventListener('resize',schedule,{passive:true});
  if(typeof ResizeObserver!=='undefined')new ResizeObserver(schedule).observe(info);
+ schedule();
+})();
+</script>
+
+<!-- EARTH 7.1 consolidated responsive layout (single final authority) -->
+<style id="earth71-layout">
+@media(min-width:850px){
+ #app .info{width:min(440px,calc(100vw - 44px))!important;max-width:calc(100vw - 44px)!important;bottom:16px!important;left:22px!important}
+ #sat61-toggle,#advanced-open{bottom:var(--earth71-dock-bottom,174px)!important;top:auto!important}
+ #sat61-toggle{left:22px!important}
+ #advanced-open{left:var(--earth71-share-left,180px)!important}
+ #sat61-panel{bottom:calc(var(--earth71-dock-bottom,174px) + 52px)!important}
+}
+#sat64-details:not([hidden]){box-sizing:border-box!important;max-width:calc(100vw - 24px)!important;overscroll-behavior:contain!important}
+@media(max-width:849px){
+ #sat64-details:not([hidden]){max-width:calc(100vw - 20px)!important}
+ #app .info{max-width:calc(100vw - 24px)!important}
+}
+</style>
+<script id="earth71-layout-sync">
+(()=>{
+ const info=document.querySelector('#app .info');
+ const sat=document.getElementById('sat61-toggle');
+ const share=document.getElementById('advanced-open');
+ if(!info||!sat||!share)return;
+ let scheduled=false;
+ function sync(){
+  scheduled=false;
+  if(window.innerWidth<850)return;
+  const box=info.getBoundingClientRect();
+  const satelliteWidth=sat.getBoundingClientRect().width;
+  const gap=10;
+  const bottom=Math.max(65,Math.round(window.innerHeight-box.top+gap));
+  document.documentElement.style.setProperty('--earth71-dock-bottom',bottom+'px');
+  document.documentElement.style.setProperty('--earth71-share-left',Math.round(box.left+satelliteWidth+gap)+'px');
+ }
+ function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(sync)}}
+ window.addEventListener('resize',schedule,{passive:true});
+ window.visualViewport?.addEventListener('resize',schedule,{passive:true});
+ if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(schedule);observer.observe(info);observer.observe(sat)}
  schedule();
 })();
 </script>

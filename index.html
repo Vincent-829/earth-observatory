@@ -943,7 +943,7 @@ listObserver.observe($('sat62-list'),{childList:true});
 function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
- highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(true);detail.hidden=false;updateDetails();
+ highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(true);window.dispatchEvent(new CustomEvent('earth:satellite-selected',{detail:{id:record.id,name:record.name,satrec:record.satrec,epoch:record.epoch}}));detail.hidden=false;updateDetails();
  if(panel.hidden)panel.hidden=false;
  if(window.matchMedia('(max-width:700px)').matches)detail.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -1216,4 +1216,72 @@ function select(source){selected=source;stop();for(const b of choices.querySelec
 for(const source of sources){const b=document.createElement('button');b.type='button';b.dataset.source=source.id;b.textContent=source.label;b.addEventListener('click',()=>select(source));choices.append(b)}
 function open(){box.hidden=false;panel.hidden=false;select(selected);box.scrollIntoView({behavior:'smooth',block:'nearest'})}
 $('sat65-open').addEventListener('click',open);$('sat65-close').addEventListener('click',()=>{stop();box.hidden=true});$('sat65-play').textContent='↗ 開啟官方直播';$('sat65-play').addEventListener('click',()=>window.open(selected.url,'_blank','noopener,noreferrer'));$('sat65-stop').addEventListener('click',()=>{stop();message('已停止播放。')});$('sat65-iss-detail-button')?.addEventListener('click',open);select(selected);
+})();</script>
+<style id="sat69-style">
+#sat69-night{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+#sat69-day-toggle{position:fixed;right:14px;bottom:65px;z-index:26;border:1px solid #49c5e9;border-radius:10px;padding:10px;background:#092a43;color:#e5faff;font:600 12px system-ui;cursor:pointer}
+#sat69-tools{border-top:1px solid #26718c;margin-top:14px;padding-top:12px}
+#sat69-tools h4{margin:8px 0;color:#b5f3ff;font-size:14px}
+#sat69-tools input,#sat69-tools select{box-sizing:border-box;max-width:100%;background:#082c44;color:#fff;border:1px solid #408eaa;border-radius:6px;padding:8px}
+#sat69-tools .sat69-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+#sat69-results{white-space:pre-line;line-height:1.65;font-size:12px;color:#c5e8f4}
+#sat69-model{height:180px;border:1px solid #397d9a;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at center,#123954,#03101e);touch-action:pan-y}
+#sat69-model svg{width:100%;height:100%;touch-action:none;cursor:grab}
+#sat69-model-note{display:block;font-size:11px;color:#9bc8db;margin:5px 0}
+@media(max-width:700px){#sat69-day-toggle{right:10px;bottom:max(12px,env(safe-area-inset-bottom));font-size:11px}#sat69-tools button{min-height:44px}}
+</style>
+<script id="sat69-features">(()=>{
+'use strict';
+const app=document.getElementById('app'),panel=document.getElementById('sat61-panel'),details=document.getElementById('sat64-details');
+if(!app||!panel||!details)return;
+const night=document.createElement('canvas');night.id='sat69-night';night.setAttribute('aria-hidden','true');app.insertBefore(night,document.getElementById('sat63-overlay'));
+const toggle=document.createElement('button');toggle.id='sat69-day-toggle';toggle.type='button';toggle.textContent='☀ 晝夜：關';toggle.setAttribute('aria-pressed','false');app.after(toggle);
+let nightOn=false,selected=null,modelAngle=0;
+toggle.onclick=()=>{nightOn=!nightOn;toggle.setAttribute('aria-pressed',String(nightOn));toggle.textContent='☀ 晝夜：'+(nightOn?'開':'關');if(!nightOn)night.getContext('2d').clearRect(0,0,night.width,night.height)};
+const tools=document.createElement('section');tools.id='sat69-tools';
+tools.innerHTML='<h4>🔭 衛星過境預報</h4><div class="sat69-line"><label>觀測地點 <select id="sat69-city"><option value="25.033,121.565">臺北</option><option value="24.147,120.673">臺中</option><option value="22.627,120.301">高雄</option><option value="23.000,120.227">臺南</option><option value="24.804,120.971">新竹</option><option value="23.987,121.601">花蓮</option><option value="custom">自訂座標</option></select></label><input id="sat69-lat" type="number" step="any" min="-90" max="90" placeholder="緯度" hidden><input id="sat69-lon" type="number" step="any" min="-180" max="180" placeholder="經度" hidden></div><div class="sat69-line"><button id="sat69-forecast" type="button">計算未來 24 小時</button></div><div id="sat69-results" aria-live="polite">請先點選一顆衛星，再計算過境時間。此為軌道模型預測，非可見保證。</div><h4>🛰 重要衛星示意模型</h4><div id="sat69-model"></div><small id="sat69-model-note">選取 ISS 或哈伯望遠鏡可查看可旋轉的簡化示意模型；並非精密 3D CAD 模型。</small>';
+details.append(tools);
+const $=id=>document.getElementById(id),city=$('sat69-city'),latInput=$('sat69-lat'),lonInput=$('sat69-lon'),results=$('sat69-results'),model=$('sat69-model');
+city.onchange=()=>{latInput.hidden=lonInput.hidden=city.value!=='custom'};
+function sun(date){const jd=date.getTime()/86400000+2440587.5,n=jd-2451545;const L=(280.46+.9856474*n)*Math.PI/180,g=(357.528+.9856003*n)*Math.PI/180;const lambda=L+(1.915*Math.sin(g)+.02*Math.sin(2*g))*Math.PI/180;const eps=(23.439-.0000004*n)*Math.PI/180;const dec=Math.asin(Math.sin(eps)*Math.sin(lambda));const ra=Math.atan2(Math.cos(eps)*Math.sin(lambda),Math.cos(lambda));const gmst=(280.46061837+360.98564736629*(jd-2451545))*Math.PI/180;return {lat:dec,lon:Math.atan2(Math.sin(ra-gmst),Math.cos(ra-gmst))}}
+function sunlight(lat,lon,s){return Math.sin(lat)*Math.sin(s.lat)+Math.cos(lat)*Math.cos(s.lat)*Math.cos(lon-s.lon)}
+let lastDraw=0;
+function draw(t){
+ requestAnimationFrame(draw);if(!nightOn||t-lastDraw<1800)return;lastDraw=t;
+ const view=window.earthOrbitalView?.();if(!view)return;
+ const w=Math.max(1,Math.round(app.clientWidth/5)),h=Math.max(1,Math.round(app.clientHeight/5));
+ if(night.width!==w||night.height!==h){night.width=w;night.height=h}
+ const ctx=night.getContext('2d'),img=ctx.createImageData(w,h),s=sun(new Date()),cx=view.sphere.x/5,cy=view.sphere.y/5,r=view.sphere.r/5,clat=view.lat*Math.PI/180,clon=view.lon*Math.PI/180;
+ for(let y=Math.max(0,Math.floor(cy-r));y<Math.min(h,Math.ceil(cy+r));y++)for(let x=Math.max(0,Math.floor(cx-r));x<Math.min(w,Math.ceil(cx+r));x++){
+  const ex=(x-cx)/r,ny=(cy-y)/r,rr=ex*ex+ny*ny;if(rr>=1)continue;
+  const front=Math.sqrt(1-rr),phi=Math.asin(ny*Math.cos(clat)+front*Math.sin(clat)),lambda=clon+Math.atan2(ex,front*Math.cos(clat)-ny*Math.sin(clat));
+  const light=sunlight(phi,lambda,s),dark=Math.max(0,Math.min(1,(light+.075)/.15));const a=Math.round(185*(1-dark));const i=(y*w+x)*4;
+  img.data[i]=0;img.data[i+1]=5;img.data[i+2]=20;img.data[i+3]=a;
+ }
+ ctx.putImageData(img,0,0);night.style.width='100%';night.style.height='100%';
+}
+requestAnimationFrame(draw);
+function modelView(){
+ if(!selected){model.textContent='請選取衛星';return}
+ const iss=selected.id===25544,hubble=/HST|HUBBLE/i.test(selected.name);
+ if(!iss&&!hubble){model.textContent='目前提供 ISS 與哈伯太空望遠鏡的示意模型。';return}
+ const rot='rotate('+modelAngle+' 160 85)';
+ model.innerHTML=iss?'<svg viewBox="0 0 320 170" role="img" aria-label="ISS 太空站可旋轉示意圖"><g transform="'+rot+'"><g fill="#2e77ac" stroke="#9ee8ff" stroke-width="2"><rect x="24" y="52" width="89" height="68"/><rect x="207" y="52" width="89" height="68"/></g><g stroke="#f1f8ff" stroke-width="5"><path d="M60 85H260"/><path d="M160 30V140"/></g><g fill="#c3d6dd" stroke="#fff"><rect x="117" y="70" width="86" height="30" rx="10"/><rect x="147" y="40" width="26" height="90" rx="7"/></g></g></svg>':'<svg viewBox="0 0 320 170" role="img" aria-label="哈伯太空望遠鏡可旋轉示意圖"><g transform="'+rot+'"><g fill="#367cb0" stroke="#8ddaff" stroke-width="2"><rect x="25" y="45" width="75" height="80"/><rect x="220" y="45" width="75" height="80"/></g><path d="M100 85H220" stroke="#e8f8ff" stroke-width="6"/><rect x="125" y="54" width="70" height="62" rx="12" fill="#d6e3e9" stroke="#fff" stroke-width="3"/><ellipse cx="194" cy="85" rx="17" ry="30" fill="#6b8b9d" stroke="#f2f8ff" stroke-width="3"/></g></svg>';
+}
+let startX=null;model.addEventListener('pointerdown',e=>{if(e.target.closest('svg')){startX=e.clientX;model.setPointerCapture(e.pointerId)}});model.addEventListener('pointermove',e=>{if(startX===null)return;modelAngle+=(e.clientX-startX)*.55;startX=e.clientX;modelView()});model.addEventListener('pointerup',()=>startX=null);model.addEventListener('pointercancel',()=>startX=null);
+window.addEventListener('earth:satellite-selected',e=>{selected=e.detail;modelAngle=0;modelView();results.textContent='已選取 '+selected.name+'。按「計算未來 24 小時」查看過境預報。'});
+function forecast(){
+ const sat=window.earthSGP4;if(!sat||!selected){results.textContent='請先開啟衛星模式並選取衛星。';return}
+ let lat,lon;if(city.value==='custom'){lat=Number(latInput.value);lon=Number(lonInput.value);if(!latInput.value||!lonInput.value||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){results.textContent='請輸入有效緯度（-90 至 90）及經度（-180 至 180）。';return}}else [lat,lon]=city.value.split(',').map(Number);
+ const rad=Math.PI/180,observer={latitude:lat*rad,longitude:lon*rad,height:0},now=Date.now(),step=60000,passes=[];let current=null;
+ for(let i=0;i<=1440;i++){const date=new Date(now+i*step),pv=sat.propagate(selected.satrec,date);if(!pv?.position||typeof pv.position==='boolean')continue;
+  const ecf=sat.eciToEcf(pv.position,sat.gstime(date)),look=sat.ecfToLookAngles(observer,ecf),el=look.elevation/rad;
+  if(el>=10){if(!current)current={start:date,max:-90,peak:date,az:0};if(el>current.max){current.max=el;current.peak=date;current.az=(look.azimuth/rad+360)%360}}
+  else if(current){current.end=date;passes.push(current);current=null;if(passes.length>=8)break}
+ }
+ if(current){current.end=new Date(now+1440*step);passes.push(current)}
+ const format=d=>d.toLocaleString('zh-TW',{hour12:false,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+ results.textContent=passes.length?passes.map((p,i)=>{const solar=sun(p.peak),night=sunlight(lat*rad,lon*rad,solar)<-.1;return (i+1)+'. '+format(p.start)+' → '+format(p.end)+'\n最高仰角 '+p.max.toFixed(1)+'°；方位 '+p.az.toFixed(0)+'°；'+(night?'觀測地點為夜間':'觀測地點為白天')}).join('\n\n')+'\n\n判定門檻：仰角 ≥10°。肉眼可見還需衛星受日照、天氣與亮度條件，不能單憑此表保證。':'未來 24 小時內沒有仰角 ≥10° 的預測過境。';
+}
+$('sat69-forecast').onclick=forecast;
 })();</script>

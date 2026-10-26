@@ -920,8 +920,9 @@ listObserver.observe($('sat62-list'),{childList:true});
 function selectSatellite(id){
  const record=records.find(r=>r.id===Number(id));
  if(!record){setMessage('衛星軌道模型尚未就緒，請稍後重試。');return}
- highlightedId=record.id;selectedRecord=record;setFollow(false);detail.hidden=false;updateDetails();
+ highlightedId=record.id;selectedRecord=record;setFollow(true);detail.hidden=false;updateDetails();
  if(panel.hidden)panel.hidden=false;
+ if(window.matchMedia('(max-width:700px)').matches)detail.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 $('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false)});
 $('sat62-list').addEventListener('click',event=>{const item=event.target.closest('[data-norad]');if(item)selectSatellite(item.dataset.norad)});
@@ -1094,7 +1095,7 @@ $('app').addEventListener('pointerup',event=>{
  const x=event.clientX-bounds.left,y=event.clientY-bounds.top;
  const threshold=event.pointerType==='touch'?29:19;
  // Label hit boxes have priority: tapping the NORAD number opens that satellite.
- const padding=event.pointerType==='touch'?7:3;
+ const padding=event.pointerType==='touch'?12:5;
  const hit=clickableSatelliteLabels.find(({box})=>x>=box.x-padding&&x<=box.x+box.w+padding&&y>=box.y-padding&&y<=box.y+box.h+padding);
  if(hit){
   event.stopImmediatePropagation();
@@ -1114,7 +1115,7 @@ $('app').addEventListener('pointerup',event=>{
  event.stopImmediatePropagation();
  selectSatellite(nearest.rec.id);
  setMessage('已選取衛星：'+nearest.rec.name+'（NORAD #'+nearest.rec.id+'）');
- panel.scrollTop=panel.scrollHeight;
+ detail.scrollIntoView({behavior:'smooth',block:'nearest'});
 },true);
 
 requestAnimationFrame(paint);
@@ -1141,12 +1142,12 @@ $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新�
 #sat65-open-official{display:block;text-align:center;padding:12px;border:1px solid #378db5;border-radius:8px;margin-top:9px;text-decoration:none}
 </style><style id="sat67-mobile">
 @media(max-width:700px){
- #sat61-panel{max-width:min(94vw,420px)!important;max-height:82dvh!important;overflow-y:auto!important;overscroll-behavior:contain}
- #sat64-details{scroll-margin-top:16px}
+ #sat61-panel{left:3vw!important;right:3vw!important;bottom:max(10px,env(safe-area-inset-bottom))!important;width:94vw!important;max-width:420px!important;max-height:min(68dvh,620px)!important;overflow-y:auto!important;overscroll-behavior:contain;border-radius:18px!important;padding-bottom:max(14px,env(safe-area-inset-bottom))!important}
+ #sat64-details{scroll-margin-top:16px;position:relative;background:rgba(6,44,66,.96);border:1px solid #4ccde5;border-radius:12px;padding:10px;margin-top:10px}
  #sat64-details button,#sat61-panel button{min-height:42px;touch-action:manipulation}
  #sat62-list{max-height:25dvh;overflow-y:auto;overscroll-behavior:contain}
  #sat65-source-choices button{min-height:44px}
- #sat64-data{overflow-wrap:anywhere}
+ #sat64-data{overflow-wrap:anywhere}#sat67-follow{position:sticky;top:0;z-index:2}#sat62-list [data-norad]{min-height:42px;touch-action:manipulation}
 }
 @media(prefers-reduced-motion:reduce){#sat67-follow{transition:none!important}}
 </style><style id="sat65-style">

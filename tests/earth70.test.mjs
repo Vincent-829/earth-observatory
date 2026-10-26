@@ -42,3 +42,17 @@ test('selected satellite has an independent tracking card', () => {
  assert.match(html, /detail\.style\.left/);
  assert.match(html, /detail\.style\.top/);
 });
+
+test('7.1 desktop dock follows actual button width and country card bounds', () => {
+ assert.match(html, /id="earth71-layout-sync"/);
+ assert.match(html, /satelliteWidth=sat\.getBoundingClientRect\(\)\.width/);
+ assert.match(html, /--earth71-share-left/);
+ assert.match(html, /--earth71-dock-bottom/);
+});
+test('7.1 satellite card considers all four positions and clamps to viewport', () => {
+ assert.match(html, /const candidates=\[/);
+ assert.match(html, /point\.x-gap-cardW/);
+ assert.match(html, /point\.y-gap-cardH/);
+ assert.match(html, /Math\.min\(maxX,candidate\.x\)/);
+ assert.match(html, /Math\.min\(maxY,candidate\.y\)/);
+});

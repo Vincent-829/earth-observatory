@@ -1384,3 +1384,41 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  #visit-counter{top:117px!important}
 }
 </style>
+
+<!-- EARTH 7.0.3: no-overlap desktop control layout -->
+<style id="earth70-no-overlap">
+@media(min-width:850px){
+ /* Travel actions occupy a dedicated right rail BELOW the globe controls. */
+ #visits-open,#progress-open,#timeline-open{
+  position:fixed!important;left:auto!important;right:22px!important;
+  width:138px!important;min-height:42px!important;
+  bottom:auto!important;z-index:18!important;
+ }
+ #visits-open{top:calc(50dvh + 48px)!important}
+ #progress-open{top:calc(50dvh + 96px)!important}
+ #timeline-open{top:calc(50dvh + 144px)!important}
+ /* Move travel controls to a compact fixed rail instead of overlapping the zoom controls. */
+ #app .control{top:clamp(180px,25dvh,210px)!important;right:22px!important;gap:7px!important}
+ #app .search{top:clamp(80px,12dvh,100px)!important}
+ /* Bottom-left action bar is OUTSIDE the country identification card. */
+ #app .info{bottom:90px!important}
+ #sat61-toggle{position:fixed!important;left:22px!important;bottom:18px!important;right:auto!important;top:auto!important}
+ #advanced-open{position:fixed!important;left:195px!important;bottom:18px!important;top:auto!important;right:auto!important}
+ #sat69-day-toggle{position:fixed!important;right:22px!important;bottom:18px!important;top:auto!important}
+ #visits-panel,#progress-panel,#timeline-panel,#advanced-panel{
+  top:clamp(100px,14dvh,160px)!important;
+  max-height:calc(100dvh - clamp(100px,14dvh,160px) - 20px)!important;
+ }
+}
+@media(min-width:850px) and (max-height:760px){
+ #app .control{top:175px!important}
+ #visits-open{top:auto!important;bottom:166px!important}
+ #progress-open{top:auto!important;bottom:116px!important}
+ #timeline-open{top:auto!important;bottom:66px!important}
+ #app .info{bottom:88px!important;max-height:25dvh!important;overflow:auto}
+}
+@media(max-width:849px){
+ #app .info{bottom:calc(80px + env(safe-area-inset-bottom,0px))!important}
+ #sat61-toggle{position:static!important}
+}
+</style>

@@ -1337,3 +1337,50 @@ window.addEventListener('resize',resize,{passive:true});
 window.addEventListener('orientationchange',resize,{passive:true});
 window.visualViewport?.addEventListener('resize',resize,{passive:true});
 })();</script>
+
+<!-- EARTH 7.0.2 desktop overlap and overflow corrections -->
+<style id="earth70-desktop-fixes">
+/* Keep status lines separate, regardless of earlier absolute positioning. */
+#app .top{top:16px;left:24px;max-width:min(48vw,650px)}
+#app .top .status{display:block;margin-top:12px;line-height:1.55;white-space:normal}
+#visit-counter{top:132px!important;left:24px!important;line-height:1.5!important;max-width:45vw}
+@media(min-width:850px){
+ /* Raise the right-hand globe controls and keep them below search. */
+ #app .control{top:150px!important;right:24px!important;gap:7px}
+ #app .search{top:82px!important;right:24px!important}
+ /* Every travel popup is constrained to the visible browser viewport. */
+ #visits-panel,#progress-panel,#timeline-panel,#advanced-panel{
+   position:fixed!important;top:clamp(175px,23dvh,230px)!important;
+   bottom:auto!important;left:auto!important;right:24px!important;
+   width:min(440px,calc(100vw - 48px))!important;
+   max-height:calc(100dvh - clamp(175px,23dvh,230px) - 20px)!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior:contain;box-sizing:border-box;
+   z-index:35!important;
+ }
+ /* Reserve separate left-bottom locations for primary actions. */
+ #sat61-toggle{left:20px!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important}
+ #advanced-open{left:180px!important;right:auto!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important}
+ #sat69-day-toggle{right:24px!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important}
+ #sat61-panel{bottom:calc(82px + env(safe-area-inset-bottom,0px))!important;max-height:min(66dvh,620px)!important}
+}
+@media(max-width:849px){
+ #app .top{left:12px;top:10px;max-width:calc(100vw - 24px)}
+ #app .top .status{line-height:1.4;margin-top:7px}
+ #visit-counter{left:12px!important;top:112px!important;max-width:calc(100vw - 24px)}
+ #visits-panel,#progress-panel,#timeline-panel,#advanced-panel{
+   position:fixed!important;top:auto!important;
+   bottom:calc(68px + env(safe-area-inset-bottom,0px))!important;
+   left:10px!important;right:10px!important;width:auto!important;
+   max-width:none!important;max-height:min(65dvh,calc(100dvh - 110px))!important;
+   overflow-y:auto!important;overflow-x:hidden!important;
+   overscroll-behavior:contain;z-index:35!important;
+ }
+}
+@media(max-height:650px) and (min-width:850px){
+ #visits-panel,#progress-panel,#timeline-panel,#advanced-panel{
+  top:110px!important;max-height:calc(100dvh - 125px)!important
+ }
+ #visit-counter{top:117px!important}
+}
+</style>

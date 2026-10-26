@@ -1091,7 +1091,7 @@ $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新�
 #sat65-source-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
 #sat65-source-choices button{min-width:0;padding:9px 4px;font-size:12px;border-radius:8px;border:1px solid #378db5;background:#092a43;color:#d3f6ff}
 #sat65-source-choices button[aria-pressed="true"]{background:#096c98;border-color:#79eaff}
-#sat65-open-official{display:block;text-align:center;padding:10px;border:1px solid #378db5;border-radius:8px;margin-top:9px;text-decoration:none}
+#sat65-open-official{display:block;text-align:center;padding:12px;border:1px solid #378db5;border-radius:8px;margin-top:9px;text-decoration:none}
 </style><style id="sat65-style">
 #sat65-live{margin:12px 0;padding:12px;border:1px solid #54d8f7;border-radius:13px;background:linear-gradient(140deg,#062844,#08162e);box-shadow:0 0 18px #1cbdf526}
 #sat65-live[hidden],#sat65-iss-detail-button[hidden]{display:none!important}
@@ -1110,19 +1110,18 @@ $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新�
 'use strict';
 const $=id=>document.getElementById(id),box=$('sat65-live'),player=$('sat65-player'),panel=$('sat61-panel'),status=$('sat65-embed-status');
 const sources=[
-{id:'sen',label:'Sen 4K',name:'Sen SpaceTV-1｜ISS 4K',url:'https://www.youtube.com/@Sen/live',embed:'https://www.youtube.com/embed/live_stream?channel=UC9aY5qfE1uZ1t7j9r6QfPAA',description:'Sen 官方直播入口。直播影片可能更換，若播放器不可用請開啟 Sen 的 YouTube 直播頁。'},
-{id:'nasa',label:'NASA',name:'NASA｜ISS 官方直播',url:'https://www.nasa.gov/live/?channel=iss',embed:'https://www.youtube.com/embed/0P41gTF-Nl4',description:'NASA 官方 ISS 直播影片。若直播停止或禁止嵌入，請開啟 NASA 官方直播頁。'},
-{id:'csa',label:'加拿大 CSA',name:'加拿大太空總署｜ISS Live Views',url:'https://www.asc-csa.gc.ca/eng/iss/watch-live.asp',embed:null,description:'加拿大太空總署的官方 ISS 直播頁面。其網站禁止或不支援內嵌時請直接開啟官方頁面。'}];
+{id:'sen',label:'Sen 4K',name:'Sen SpaceTV-1｜ISS 4K',url:'https://www.sen.com/',description:'Sen 的 ISS 外部 4K 地球實況。請在 Sen 官方網站觀看；此網站不允許嵌入地球儀。'},
+{id:'nasa',label:'NASA',name:'NASA｜ISS 官方直播',url:'https://www.nasa.gov/live/?channel=iss',description:'NASA 官方太空站影像與直播。請從 NASA 官方頁面觀看，避免內嵌錯誤。'},
+{id:'csa',label:'加拿大 CSA',name:'加拿大太空總署｜ISS Live Views',url:'https://www.asc-csa.gc.ca/eng/iss/watch-live.asp',description:'加拿大太空總署的 ISS 高畫質影像入口。請在官方網站觀看。'}];
 let selected=sources[0];
 const choices=document.createElement('div');choices.id='sat65-source-choices';choices.setAttribute('role','group');choices.setAttribute('aria-label','ISS 直播來源');
 const official=document.createElement('a');official.id='sat65-open-official';official.target='_blank';official.rel='noopener noreferrer';
 box.querySelector('a[href*="jKHvbJe9c_Y"]')?.replaceWith(official);player.before(choices);
-box.querySelector('.sat65-note').textContent='使用 YouTube 影片播放器而非直接嵌入官方網站；來源可能停止直播或限制第三方播放。';
+box.querySelector('.sat65-note').textContent='三個直播來源均不在此頁面內嵌，避免「拒絕連線」。點選來源後，可直接開啟官方直播網站。';
 function message(t){status.textContent=t}
-function stop(){player.replaceChildren();const d=document.createElement('div');d.className='sat65-placeholder';d.textContent='選擇來源後按「播放直播」，或直接開啟官方直播。';player.append(d)}
+function stop(){player.replaceChildren();const d=document.createElement('div');d.className='sat65-placeholder';d.textContent='此直播來源不支援在地球儀內可靠播放。請點選下方「開啟官方直播」，影片會在新分頁顯示。';player.append(d)}
 function select(source){selected=source;stop();for(const b of choices.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.source===source.id));box.querySelector('.sat65-head strong').textContent='📺 '+source.name;official.href=source.url;official.textContent='↗ 開啟 '+source.label+' 官方直播';message(source.description)}
 for(const source of sources){const b=document.createElement('button');b.type='button';b.dataset.source=source.id;b.textContent=source.label;b.addEventListener('click',()=>select(source));choices.append(b)}
 function open(){box.hidden=false;panel.hidden=false;select(selected);box.scrollIntoView({behavior:'smooth',block:'nearest'})}
-function play(){stop();if(!/^https?:$/.test(location.protocol)){message('請從 HTTPS GitHub Pages 網站開啟，或使用官方直播連結。');return}if(!selected.embed){message('此來源沒有已確認可用的嵌入播放器，請按下方「開啟官方直播」。');return}player.replaceChildren();const iframe=document.createElement('iframe');iframe.title=selected.name;iframe.allow='autoplay; encrypted-media; picture-in-picture; fullscreen';iframe.allowFullscreen=true;iframe.referrerPolicy='strict-origin-when-cross-origin';iframe.src=selected.embed+'?autoplay=1&playsinline=1&rel=0';player.append(iframe);message('正在嘗試載入 '+selected.label+' 影片；若顯示「Video unavailable」或錯誤碼，請使用下方官方連結。')}
-$('sat65-open').addEventListener('click',open);$('sat65-close').addEventListener('click',()=>{stop();box.hidden=true});$('sat65-play').addEventListener('click',play);$('sat65-stop').addEventListener('click',()=>{stop();message('已停止播放。')});$('sat65-iss-detail-button')?.addEventListener('click',open);select(selected);
+$('sat65-open').addEventListener('click',open);$('sat65-close').addEventListener('click',()=>{stop();box.hidden=true});$('sat65-play').textContent='↗ 開啟官方直播';$('sat65-play').addEventListener('click',()=>window.open(selected.url,'_blank','noopener,noreferrer'));$('sat65-stop').addEventListener('click',()=>{stop();message('已停止播放。')});$('sat65-iss-detail-button')?.addEventListener('click',open);select(selected);
 })();</script>

@@ -58,3 +58,24 @@ test('7.1 satellite card considers all four positions and clamps to viewport', (
  assert.match(html, /Math\.min\(maxX,candidate\.x\)/);
  assert.match(html, /Math\.min\(maxY,candidate\.y\)/);
 });
+
+test('7.1 responsive layout preserves desktop and mobile boundaries', () => {
+ assert.match(html, /id="earth71-layout"/);
+ assert.match(html, /@media\(min-width:850px\)/);
+ assert.match(html, /@media\(max-width:849px\)/);
+ assert.match(html, /width:min\(440px,calc\(100vw - 44px\)\)/);
+ assert.match(html, /max-width:calc\(100vw - 20px\)/);
+});
+test('7.1 legacy duplicate dock definitions stay removed', () => {
+ for(const id of ['earth70-bottom-left-dock','earth70-measured-dock','earth70-measured-dock-script']){
+  assert.ok(!html.includes('id="'+id+'"'), 'Legacy dock still present: '+id);
+ }
+ assert.equal((html.match(/id="earth71-layout"/g)||[]).length,1);
+ assert.equal((html.match(/id="earth71-layout-sync"/g)||[]).length,1);
+});
+test('7.1 satellite card remains visible only for projected on-screen satellite', () => {
+ assert.match(html, /detail\.style\.visibility='visible'/);
+ assert.match(html, /detail\.style\.visibility='hidden'/);
+ assert.match(html, /detail\.style\.left=placed\.x/);
+ assert.match(html, /detail\.style\.top=placed\.y/);
+});

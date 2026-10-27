@@ -61,9 +61,14 @@ function updateStatus(){if(eventFetched&&!eventBusy)$('earth72-status').textCont
 $('earth72-refresh').onclick=loadEvents;$('earth72-weather-refresh').onclick=loadWeather;
 for(const type of ['quake','storm','volcano'])$('earth72-'+type).onchange=()=>{listEvents();if(checked(type)&&!eventFetched)loadEvents()};
 for(const type of ['weather','cloud'])$('earth72-'+type).onchange=()=>{if(checked(type)&&!weatherFetched)loadWeather()};
-window.addEventListener('earth:satellite-selected',e=>{selectedSat=e.detail;orbitAt=0});
+function useSatellite(e){selectedSat=e.detail;paths=[];boundary=[];orbitAt=0;}
+window.addEventListener('earth:satellite-selected',useSatellite);
+window.addEventListener('earth:satellite-updated',useSatellite);
+window.addEventListener('earth:satellite-cleared',()=>{selectedSat=null;paths=[];boundary=[];orbitAt=0;$('earth72-orbit-status').textContent='請在衛星模式選取衛星';});
 function orbit(){paths=[];boundary=[];const sat=window.earthSGP4;if(!sat||!selectedSat)return;
- const now=Date.now();for(let m=-45;m<=45;m+=1){const t=new Date(now+m*60000),p=sat.propagate(selectedSat.satrec,t);if(!p?.position||typeof p.position==='boolean'){paths.push(null);continue}const g=sat.eciToGeodetic(p.position,sat.gstime(t));paths.push([g.longitude*180/Math.PI,g.latitude*180/Math.PI]);if(m===0)boundary=C.footprint(g.longitude*180/Math.PI,g.latitude*180/Math.PI,g.height)}
+ const now=Date.now();try{for(let m=-45;m<=45;m+=1){const t=new Date(now+m*60000),p=sat.propagate(selectedSat.satrec,t);if(!p?.position||typeof p.position==='boolean'){paths.push(null);continue}const g=sat.eciToGeodetic(p.position,sat.gstime(t));paths.push([g.longitude*180/Math.PI,g.latitude*180/Math.PI]);if(m===0)boundary=C.footprint(g.longitude*180/Math.PI,g.latitude*180/Math.PI,g.height)}
+ if(!paths.some(Boolean)||!boundary.length)throw Error('目前位置無法推算');
+ }catch(e){paths=[];boundary=[];$('earth72-orbit-status').textContent='衛星軌道推算失敗，暫不顯示地面軌跡與範圍。';return}
  $('earth72-orbit-status').textContent=selectedSat.name+' · 推算：'+date(now)+' · 軌道參數：'+selectedSat.epoch+'（'+age(selectedSat.epoch,7*24*HOUR)+'）';}
 function line(points,view,color,dash=[]){ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=1.6;ctx.setLineDash(dash);let previous=null;for(const c of points){const p=c&&C.validCoord(c)&&C.project(c,view);if(!p){previous=null;continue}if(previous&&Math.hypot(p.x-previous.x,p.y-previous.y)<view.sphere.r*.5)ctx.lineTo(p.x,p.y);else ctx.moveTo(p.x,p.y);previous=p}ctx.stroke();ctx.setLineDash([])}
 function paint(t){requestAnimationFrame(paint);if(t-lastFrame<80||document.hidden)return;lastFrame=t;

@@ -46,6 +46,11 @@ function textureCoord(x,y,view){
  const d=Math.PI/180,p=view.lat*d,front=Math.sqrt(1-rr),latitude=Math.asin(Math.max(-1,Math.min(1,north*Math.cos(p)+front*Math.sin(p)))),longitude=view.lon*d+Math.atan2(east,front*Math.cos(p)-north*Math.sin(p));
  return {u:((longitude/(2*Math.PI)+.5)%1+1)%1,v:Math.max(0,Math.min(1,.5-latitude/Math.PI))};
 }
-const api={validCoord,freshness,earthquakes,events,weather,footprint,project,cloudDay,textureCoord};
+function satelliteEpoch(record){
+ const jd=record?.jdsatepoch;if(!Number.isFinite(jd))return '';
+ const date=new Date((jd-2440587.5)*86400000);
+ return Number.isFinite(date.getTime())?date.toISOString():'';
+}
+const api={validCoord,freshness,earthquakes,events,weather,footprint,project,cloudDay,textureCoord,satelliteEpoch};
 root.Earth72=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

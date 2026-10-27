@@ -46,3 +46,7 @@ test('imagery and observation controls keep 7.1 tablet breakpoint and load befor
  assert.ok(html.indexOf('js/earth72-clouds.js')<html.lastIndexOf('</body>'));assert.equal((html.match(/<\/html>/g)||[]).length,1);
  new vm.Script(readFileSync(new URL('../js/earth72-clouds.js',import.meta.url),'utf8'));
 });
+
+test('actual SGP4 Julian epoch is UTC and invalid epochs stay unknown',()=>{
+ assert.equal(C.satelliteEpoch({jdsatepoch:2440587.5}),'1970-01-01T00:00:00.000Z');assert.equal(C.satelliteEpoch({jdsatepoch:2440588}),'1970-01-01T12:00:00.000Z');assert.equal(C.satelliteEpoch({}), '');assert.equal(C.satelliteEpoch({jdsatepoch:Infinity}), '');assert.equal(C.satelliteEpoch({jdsatepoch:1e100}), '');
+});

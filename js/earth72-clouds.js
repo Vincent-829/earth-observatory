@@ -31,7 +31,7 @@ async function load(){
   let valid=false;for(let i=3;i<pixels.data.length;i+=4)if(pixels.data[i]){valid=true;break}if(!valid)throw Error('所選日期沒有可用像素');
   if(token!==requestId||input.value!==selected)return;
   texture=pixels;imageDate=selected;cacheKey='';status.textContent='NASA Terra／MODIS · '+imageDate+'（UTC 日合成，非即時）；讀取：'+new Date().toLocaleString('zh-TW',{hour12:false})+'。缺測區透明。';
- }catch(e){clear();status.textContent='衛星雲量圖無法取得：'+e.message+'；未顯示替代或舊影像。'}
+ }catch(e){if(token!==requestId||input.value!==selected)return;clear();status.textContent='衛星雲量圖無法取得：'+e.message+'；未顯示替代或舊影像。'}
  finally{loading=false;button.disabled=false}
 }
 button.onclick=load;toggle.onchange=()=>{if(toggle.checked&&!texture)load();if(!toggle.checked)ctx.clearRect(0,0,canvas.width,canvas.height)};

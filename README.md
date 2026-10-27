@@ -101,3 +101,24 @@ Android touch emulation, Windows OS testing or physical-device acceptance**.
 NASA product metadata:
 https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Terra_Cloud_Fraction_Day.json
 WMS documentation: https://nasa-gibs.github.io/gibs-api-docs/access-basics/
+
+## EARTH 7.2 regression hardening
+
+- Satellite selection, model refresh and dismissal now share explicit lifecycle
+  events. Ground tracks, visibility boundaries, future predictions and pass
+  forecasts are invalidated when the underlying TLE model changes. Dismissing
+  satellite details clears the selection in the added ground layer and forecast.
+- The epoch/freshness label now comes from the actual SGP4 model's TLE Julian
+  epoch (`satrec.jdsatepoch`), rather than the separately fetched OMM catalogue.
+  Missing model epoch stays unknown; it never borrows a newer catalogue date.
+- Ground-track propagation failures clear geometry and display an error without
+  stopping the render loop. Changing the cloud image date also prevents an old
+  failed request from replacing the new date's status message.
+- Added behavior regressions for model refresh/dismissal, propagation failure,
+  asynchronous image-date races, independent event-source failure and stale
+  source removal on refresh. All 33 tests pass.
+- Live browser verification confirmed ISS ground-track/visibility generation
+  that closing its detail card resets the added ground-layer selection, and
+  that an actual refresh invalidates the pass forecast.
+  This follow-up does not change the accepted desktop control positions and
+  does not claim new physical-device acceptance.

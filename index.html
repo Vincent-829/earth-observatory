@@ -952,7 +952,7 @@ function selectSatellite(id){
  highlightedId=record.id;selectedRecord=record;predictionAt=0;setFollow(false);window.dispatchEvent(new CustomEvent('earth:satellite-selected',{detail:{id:record.id,name:record.name,satrec:record.satrec,epoch:record.epoch}}));detail.hidden=false;updateDetails();
  // Satellite details are presented in an independent orbit-following card.
 }
-$('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false)});
+$('sat64-close').addEventListener('click',()=>{detail.hidden=true;selectedRecord=null;highlightedId=null;setFollow(false);window.dispatchEvent(new CustomEvent('earth:satellite-cleared'))});
 $('sat62-list').addEventListener('click',event=>{const item=event.target.closest('[data-norad]');if(item)selectSatellite(item.dataset.norad)});
 $('sat62-list').addEventListener('keydown',event=>{if((event.key==='Enter'||event.key===' ')&&event.target.matches('[data-norad]')){event.preventDefault();selectSatellite(event.target.dataset.norad)}});
 
@@ -995,10 +995,14 @@ async function rebuild(){
   if(!pair)return null;
   const satrec=sat.twoline2satrec(pair[0],pair[1]);
   if(satrec.error)return null;
-  return {id,name:o.OBJECT_NAME||String(id),satrec,epoch:o.EPOCH};
+  return {id,name:o.OBJECT_NAME||String(id),satrec,epoch:window.Earth72?.satelliteEpoch(satrec)||''};
  }catch{return null}}).filter(Boolean);
  cache=[];lastSample=0;
- if(selectedRecord){selectedRecord=records.find(r=>r.id===selectedRecord.id)||null;if(!selectedRecord){detail.hidden=true;highlightedId=null}else updateDetails()}
+ if(selectedRecord){
+  selectedRecord=records.find(r=>r.id===selectedRecord.id)||null;predictionAt=0;predictionFor=null;predictionCache=[];
+  if(!selectedRecord){detail.hidden=true;highlightedId=null;setFollow(false);window.dispatchEvent(new CustomEvent('earth:satellite-cleared'))}
+  else{updateDetails();window.dispatchEvent(new CustomEvent('earth:satellite-updated',{detail:{id:selectedRecord.id,name:selectedRecord.name,satrec:selectedRecord.satrec,epoch:selectedRecord.epoch}}))}
+ }
  setMessage(records.length?'已建立 '+records.length+' 顆真實衛星軌道。關閉面板查看；若無軌道請截圖此行。':'無法取得相符的 TLE。請按更新或改用 HTTPS 開啟。');
 }
 function project(position,view,sampleTime){
@@ -1306,6 +1310,8 @@ function modelView(){
 }
 let startX=null;model.addEventListener('pointerdown',e=>{if(e.target.closest('svg')){startX=e.clientX;model.setPointerCapture(e.pointerId)}});model.addEventListener('pointermove',e=>{if(startX===null)return;modelAngle+=(e.clientX-startX)*.55;startX=e.clientX;modelView()});model.addEventListener('pointerup',()=>startX=null);model.addEventListener('pointercancel',()=>startX=null);
 window.addEventListener('earth:satellite-selected',e=>{selected=e.detail;modelAngle=0;modelView();results.textContent='已選取 '+selected.name+'。按「計算未來 24 小時」查看過境預報。'});
+window.addEventListener('earth:satellite-updated',e=>{selected=e.detail;modelView();results.textContent='軌道資料已更新，請重新計算過境預報。'});
+window.addEventListener('earth:satellite-cleared',()=>{selected=null;modelView();results.textContent='請先點選一顆衛星，再計算過境時間。'});
 function forecast(){
  const sat=window.earthSGP4;if(!sat||!selected){results.textContent='請先開啟衛星模式並選取衛星。';return}
  let lat,lon;if(city.value==='custom'){lat=Number(latInput.value);lon=Number(lonInput.value);if(!latInput.value||!lonInput.value||!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){results.textContent='請輸入有效緯度（-90 至 90）及經度（-180 至 180）。';return}}else [lat,lon]=city.value.split(',').map(Number);

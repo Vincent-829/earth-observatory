@@ -29,3 +29,20 @@ test('surface projection hides far hemisphere and maps center correctly across d
 test('all classic inline scripts and new browser scripts parse',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');for(const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)){if(!/type="module"/.test(m[1]))new vm.Script(m[2]);}new vm.Script(readFileSync(new URL('../js/earth72.js',import.meta.url),'utf8'));assert.ok(html.includes('js/earth72-core.js'));
 });
+
+test('daily cloud imagery rejects today, future, malformed and unavailable history dates in UTC',()=>{
+ assert.equal(C.cloudDay('2026-10-26',now),true);assert.equal(C.cloudDay('2026-10-20',now),true);assert.equal(C.cloudDay('2026-10-27',now),false);assert.equal(C.cloudDay('2026-10-28',now),false);assert.equal(C.cloudDay('2026-10-19',now),false);assert.equal(C.cloudDay('2026-02-30',now),false);assert.equal(C.cloudDay('',now),false);
+});
+test('inverse cloud projection maps equator, poles, dateline and excludes space',()=>{
+ const v={lon:0,lat:0,sphere:{x:100,y:100,r:100}};
+ assert.deepEqual(C.textureCoord(100,100,v),{u:.5,v:.5});assert.equal(C.textureCoord(0,0,v),null);
+ assert.ok(C.textureCoord(100,1,v).v<.1);assert.ok(C.textureCoord(100,199,v).v>.9);
+ const dateline=C.textureCoord(100,100,{...v,lon:180});assert.equal(dateline.u,0);
+ assert.equal(C.textureCoord(100,100,{...v,sphere:{r:0}}),null);
+});
+test('imagery and observation controls keep 7.1 tablet breakpoint and load before final body close',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');const script=readFileSync(new URL('../js/earth72.js',import.meta.url),'utf8');
+ assert.match(script,/@media\(max-width:849px\)/);assert.doesNotMatch(script,/max-width:729px/);
+ assert.ok(html.indexOf('js/earth72-clouds.js')<html.lastIndexOf('</body>'));assert.equal((html.match(/<\/html>/g)||[]).length,1);
+ new vm.Script(readFileSync(new URL('../js/earth72-clouds.js',import.meta.url),'utf8'));
+});

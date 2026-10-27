@@ -489,7 +489,7 @@ const oldRenderTimeline=renderTimeline;renderTimeline=function(){oldRenderTimeli
 </script>
 
 
-</html><style id="mobile-unobstructed">
+<style id="mobile-unobstructed">
 @media(max-width:849px){
  .control{top:153px!important;left:12px!important;right:12px!important;grid-template-columns:repeat(4,minmax(0,1fr))!important}
  #mobile-menu-toggle{display:block!important;position:absolute;z-index:12;right:12px;top:201px;left:auto;width:auto;min-height:39px;padding:8px 14px;background:#052d4aee;border:1px solid #39baf4;border-radius:9px;color:#d7f8ff;font-size:12px}
@@ -849,7 +849,7 @@ button,input{background:linear-gradient(140deg,rgba(10,90,161,.96),rgba(2,39,92,
  document.getElementById('ref61-menu-close').addEventListener('click',()=>menu.hidden=true);
  document.addEventListener('keydown',e=>{if(e.key==='Escape')menu.hidden=true});
 })();</script>
-\n<style id="sat63-fix-css">
+<style id="sat63-fix-css">
 #app{position:relative}#sat63-overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;display:block}
 #sat63-alert{font-size:12px;line-height:1.5;color:#ffdc98;padding:5px 0}
 </style>
@@ -1204,7 +1204,8 @@ toggle.addEventListener('click',async()=>{
 });
 $('sat62-refresh').addEventListener('click',()=>{records=[];setMessage('重新取得衛星資料中…');setTimeout(()=>rebuild().catch(err=>setMessage('更新失敗：'+err.message)),3500)});
 })();
-</script>\n<style id="sat65-multisource-style">
+</script>
+<style id="sat65-multisource-style">
 #sat65-source-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
 #sat65-source-choices button{min-width:0;padding:9px 4px;font-size:12px;border-radius:8px;border:1px solid #378db5;background:#092a43;color:#d3f6ff}
 #sat65-source-choices button[aria-pressed="true"]{background:#096c98;border-color:#79eaff}
@@ -1612,3 +1613,6 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
 
 <script src="js/earth72-core.js"></script>
 <script src="js/earth72.js"></script>
+
+<script src="js/earth72-clouds.js"></script>
+</body></html>

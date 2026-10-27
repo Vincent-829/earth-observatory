@@ -5,7 +5,7 @@ const C=window.Earth72,$=id=>document.getElementById(id),HOUR=3600000;
 const style=document.createElement('style');style.textContent=`
 #earth72-panel{position:fixed;z-index:40;right:80px;top:118px;width:min(350px,calc(100vw - 24px));max-height:calc(100dvh - 150px);overflow:auto;background:#04172bf5;border:1px solid #36cde9;border-radius:14px;padding:14px;font-size:12px;overscroll-behavior:contain}
 #earth72-panel[hidden]{display:none}#earth72-panel label{display:block;margin:10px 0}#earth72-panel button{min-height:44px}#earth72-panel p{line-height:1.6}#earth72-panel a,#earth72-country a{color:#86e6ff}#earth72-list{max-height:230px;overflow:auto}#earth72-list article{border-top:1px solid #245976;padding:8px 0}#earth72-list button{width:100%;text-align:left}#earth72-canvas{position:absolute;inset:0;pointer-events:none;z-index:2}#earth72-country{border-top:1px solid #245976;margin-top:12px;padding-top:10px}#earth72-country p{overflow-wrap:anywhere}
-@media(max-width:729px){#earth72-panel{top:12px;right:12px;left:12px;width:auto;max-height:calc(100dvh - 90px - env(safe-area-inset-bottom,0px))}}
+@media(max-width:849px){#earth72-panel{top:12px;right:12px;left:12px;width:auto;max-height:calc(100dvh - 90px - env(safe-area-inset-bottom,0px))}}
 `;document.head.append(style);
 const panel=document.createElement('section');panel.id='earth72-panel';panel.hidden=true;panel.setAttribute('aria-label','全球觀測圖層');
 panel.innerHTML=`<button id="earth72-close" type="button" style="float:right">關閉 ×</button><h3>全球觀測圖層</h3>

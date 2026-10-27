@@ -34,6 +34,18 @@ function footprint(lon,lat,height,elevation=10){
  return Array.from({length:73},(_,i)=>{const b=i*5*d,q=Math.asin(Math.sin(p)*Math.cos(a)+Math.cos(p)*Math.sin(a)*Math.cos(b)),o=l+Math.atan2(Math.sin(b)*Math.sin(a)*Math.cos(p),Math.cos(a)-Math.sin(p)*Math.sin(q));return [((o/d+540)%360)-180,q/d]});
 }
 function project(coord,view){const d=Math.PI/180,a=(coord[0]-view.lon)*d,b=coord[1]*d,p=view.lat*d,v=Math.cos(b)*Math.cos(a)*Math.cos(p)+Math.sin(b)*Math.sin(p);return v<=0?null:{x:view.sphere.x+view.sphere.r*Math.cos(b)*Math.sin(a),y:view.sphere.y-view.sphere.r*(Math.sin(b)*Math.cos(p)-Math.cos(b)*Math.cos(a)*Math.sin(p))};}
-const api={validCoord,freshness,earthquakes,events,weather,footprint,project};
+function cloudDay(value,now=Date.now()){
+ if(typeof value!=='string'||!/^\d{4}-\d\d-\d\d$/.test(value))return false;
+ const t=Date.parse(value+'T00:00:00Z'),today=Math.floor(now/86400000)*86400000;
+ return Number.isFinite(t)&&new Date(t).toISOString().slice(0,10)===value&&t<today&&t>=today-7*86400000;
+}
+function textureCoord(x,y,view){
+ const r=view.sphere.r;if(!Number.isFinite(r)||r<=0)return null;
+ const east=(x-view.sphere.x)/r,north=(view.sphere.y-y)/r,rr=east*east+north*north;
+ if(rr>=1)return null;
+ const d=Math.PI/180,p=view.lat*d,front=Math.sqrt(1-rr),latitude=Math.asin(Math.max(-1,Math.min(1,north*Math.cos(p)+front*Math.sin(p)))),longitude=view.lon*d+Math.atan2(east,front*Math.cos(p)-north*Math.sin(p));
+ return {u:((longitude/(2*Math.PI)+.5)%1+1)%1,v:Math.max(0,Math.min(1,.5-latitude/Math.PI))};
+}
+const api={validCoord,freshness,earthquakes,events,weather,footprint,project,cloudDay,textureCoord};
 root.Earth72=api;if(typeof module!=='undefined')module.exports=api;
 })(globalThis);

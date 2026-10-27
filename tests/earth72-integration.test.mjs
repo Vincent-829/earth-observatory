@@ -34,3 +34,17 @@ test('country uses verified World Bank identity on REST Countries failure',async
  const h=harness(async u=>{if(u.includes('restcountries'))throw Error('403');return {ok:true,json:async()=>[{},[{id:'JPN',capitalCity:'Tokyo',region:{value:'East Asia & Pacific'},incomeLevel:{value:'High income'}}]]}});
  h.context.showCountry({iso:'JPN'});const section=h.elements.get('earth72-country');await section.children[2].onclick();const output=section.children[3];assert.equal(output.children[0].textContent,'首都：Tokyo');assert.match(output.children[3].textContent,/基準年份未知/);
 });
+
+function cloudHarness(imageWorks=true){
+ const h=harness(async()=>{throw Error('offline')});
+ h.context.Image=class {set src(v){if(!v)return;queueMicrotask(()=>imageWorks?this.onload():this.onerror())}};
+ h.context.Uint8ClampedArray=Uint8ClampedArray;
+ vm.runInContext(readFileSync(new URL('../js/earth72-clouds.js',import.meta.url),'utf8'),h.context);
+ return h;
+}
+test('cloud source failure releases button and labels missing imagery without fallback',async()=>{
+ const h=cloudHarness(false);await h.elements.get('earth72-imagery-refresh').onclick();assert.match(h.elements.get('earth72-imagery-status').textContent,/未顯示替代或舊影像/);assert.equal(h.elements.get('earth72-imagery-refresh').disabled,false);
+});
+test('cloud imagery validates dates before requesting an image',async()=>{
+ const h=cloudHarness(false);h.elements.get('earth72-imagery-date').value=new Date().toISOString().slice(0,10);await h.elements.get('earth72-imagery-refresh').onclick();assert.match(h.elements.get('earth72-imagery-status').textContent,/日期無效/);
+});

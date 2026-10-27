@@ -51,10 +51,9 @@ script syntax and mocked DOM/request integration, including country fallback.
 The mocked DOM tests do not replace real browser or physical-device testing.
 
 During implementation USGS, EONET, Open-Meteo and World Bank HTTP requests
-succeeded; REST Countries returned HTTP 403. Browser preview returned
-`Missing or invalid bearer token`, so Windows/iPad Air 5/OPPO Reno8 visual and
-physical-device acceptance remains pending. Responsive CSS and touch targets
-are provided, but device compatibility is not claimed as fully verified.
+succeeded; REST Countries returned HTTP 403. The initial localhost browser preview failed authentication. Follow-up verification
+uses the supported managed preview route, as recorded below. Physical-device
+acceptance remains pending.
 
 Sources:
 - https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
@@ -63,3 +62,42 @@ Sources:
   CC BY 4.0; public API subject to provider non-commercial usage limits)
 - https://restcountries.com/
 - https://datahelpdesk.worldbank.org/knowledgebase/articles/898590-country-api-queries
+
+
+## EARTH 7.2 follow-up: satellite cloud product and browser verification
+
+- Added NASA GIBS `MODIS_Terra_Cloud_Fraction_Day`, a dated day-time satellite
+  cloud-fraction raster projected onto the existing rotating globe. This is a
+  daily composite, **not real-time global imagery or a natural-colour cloud photo**.
+  Original false colours and official legend remain unchanged; missing pixels
+  remain transparent and must not be interpreted as clear sky.
+- Date selection is restricted to UTC yesterday through the previous seven days.
+  No automatic nearest-date substitution. HTTP/image/CORS failures clear the
+  layer and report failure. Requests time out at 20 seconds; changing dates
+  invalidates an in-flight result. Transparency is adjustable from 10–80%.
+- Raster projection uses a cached 240-pixel disk (160 on compact screens),
+  capped at approximately eight updates per second; it does not intercept input.
+- Corrected the observation-panel breakpoint from 729px to the established
+  849px and removed stray literal newline text that created page overflow.
+- Added an actual final body/html closing boundary. The managed live preview
+  server had inserted its reload script into an inline SVG string when no
+  closing body existed, corrupting preview execution. The corrected document
+  loads all existing and new scripts without that preview-specific error.
+
+Validation: `node --test tests/*.test.mjs`: 28 passing tests. Added UTC date
+validation, inverse raster projection, breakpoint/body-boundary and image-error
+regressions. Live browser verification confirmed desktop search for Japan,
+World Bank country fallback (Tokyo), SGP4 loading of 19 selected satellites,
+ISS selection leaving auto-follow off, and NASA 2026-10-26 image load. USGS
+returned 30 events and EONET 6 events during that session; these are observations,
+not permanent expected counts.
+
+Viewport QA uses same-origin iframes in desktop Chrome: tablet 820×1180 and
+phone 393×873, with working layer-menu entry and bounded observation panels.
+Phone document measured 393×873 with no overflow; its observation panel was
+369px wide and internally scrollable. These checks are **not iPad Safari,
+Android touch emulation, Windows OS testing or physical-device acceptance**.
+
+NASA product metadata:
+https://gibs.earthdata.nasa.gov/layer-metadata/v1.0/MODIS_Terra_Cloud_Fraction_Day.json
+WMS documentation: https://nasa-gibs.github.io/gibs-api-docs/access-basics/

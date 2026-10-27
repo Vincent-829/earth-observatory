@@ -1604,7 +1604,8 @@ window.visualViewport?.addEventListener('resize',resize,{passive:true});
  function schedule(){if(!scheduled){scheduled=true;requestAnimationFrame(sync)}}
  window.addEventListener('resize',schedule,{passive:true});
  window.visualViewport?.addEventListener('resize',schedule,{passive:true});
- if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(schedule);observer.observe(info);observer.observe(sat)}
+ window.addEventListener('orientationchange',schedule,{passive:true});
+ if(typeof ResizeObserver!=='undefined'){const observer=new ResizeObserver(schedule);observer.observe(info);observer.observe(sat);observer.observe(share)}
  schedule();
 })();
 </script>
